@@ -32,6 +32,10 @@ export const { addToBasket, removeFromBasket, clearBasket } = basketSlice.action
 
 export const selectBasketItems = state => state.basket.items
 
+// Number of units of one dish in the basket. A number (not a filtered array) so useSelector's default
+// equality skips re-renders of every other dish when the basket changes.
+export const selectBasketCountWithID = (state, id) => state.basket.items.reduce((count, item) => (item.id == id ? count + 1 : count), 0)
+
 export const selectBasketItemsWithID = (state, id) => state.basket.items.filter(item => item.id == id)
 
 export const selectBasketTotal = state => state.basket.items.reduce((total, item) => total += item.price, 0)

@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// The catalogue (Restaurant, Dish, Categories, Featured) is read-only for signed-in
+// users of the app; App Check enforcement in the Firebase console limits reads to
+// genuine builds. All writes happen from the Firebase console, never the client.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

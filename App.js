@@ -1,20 +1,19 @@
-import { theme } from './core/theme';
-import { store } from './store';
+import './global.css';
+import { hideSplash } from './helpers/splash'; // first: keeps the native splash up
+import './firebase/appCheck'; // App Check must be set up before any Firestore/Auth call
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
+import { store } from './store';
 import { Provider as ReduxProvider } from 'react-redux';
-import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
-
-import {
-    HomeIcon,
-    ShoppingCartIcon,
-    UserCircleIcon,
-    BuildingStorefrontIcon,
-} from 'react-native-heroicons/solid'
+import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
+import { getAuth } from '@react-native-firebase/auth';
+import { House, ShoppingCart, CircleUser, Store } from 'lucide-react-native';
 
 import {
     StartScreen,
@@ -30,76 +29,117 @@ import {
     AllStoresScreen,
 } from './screens';
 
-import SideHeader from './core/SideHeader';
-import AddFirestoreData from './firebase/AddFirestoreData';
+import Logo from './components/AuthComponents/Logo';
+import Text from './components/ui/Text';
+import { createNavigationTheme, fontFamilies } from './core/theme';
+import { restoreColorScheme, useAppTheme } from './hooks/useAppTheme';
+import { perfMark } from './helpers/perf';
+import { preloadCatalogue } from './helpers/catalogue';
+import { prewarmStorageHeaders } from './hooks/useStorageAuthHeaders';
 
-// Import necessary components and screens
+perfMark('app-module-evaluated');
 
-// ...
+// Everything below starts at import time and runs in parallel: the saved color scheme (the splash covers the
+// wait), and, for a user who is already signed in, the tokens for Storage images and the catalogue reads.
+const schemeRestored = restoreColorScheme();
+if (getAuth().currentUser) {
+    prewarmStorageHeaders();
+    preloadCatalogue();
+}
+
+// Safety net: never leave the app behind the splash if the first screen never reports ready.
+const SPLASH_TIMEOUT_MS = 5000;
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
 
 function CustomDrawerContent({ navigation, state }) {
+    const { colors } = useAppTheme();
+    const user = getAuth().currentUser;
+    const email = user?.isAnonymous ? 'Demo account' : user?.email;
+    const active = state.routeNames[state.index];
+
+    const itemProps = (routeName) => ({
+        focused: active === routeName,
+        activeTintColor: colors.brand,
+        inactiveTintColor: colors.muted,
+        activeBackgroundColor: colors.brandSoft,
+        labelStyle: { fontFamily: fontFamilies.semibold, fontSize: 15 },
+        style: { borderRadius: 12, marginVertical: 2 },
+    });
+
     return (
-        <DrawerContentScrollView>
-            {/* Custom top view */}
-            <View className="p-5" >
-            {/* Add your custom content here */}
+        <DrawerContentScrollView contentContainerStyle={{ paddingHorizontal: 12 }}>
+            <View className="mb-3 items-center border-b border-border px-2 pb-4 dark:border-border-dark">
+                <Logo size={96} />
+                {email ? (
+                    <Text className="text-xs text-muted dark:text-muted-dark" numberOfLines={1}>{email}</Text>
+                ) : null}
             </View>
-    
-            {/* Drawer items */}
+
             <DrawerItem
+                {...itemProps('DashboardTab')}
                 label="Dashboard"
-                icon={({ color, size }) => <HomeIcon name="home" size={size} color={color} />}
-                onPress={() => navigation.navigate('Dashboard')}
-                focused={state.routeNames[state.index] === 'Dashboard'} // Check if the item is active
-                activeTintColor="#00B8C0" // Active screen color
-                inactiveTintColor="#999999" // Inactive screens color
+                icon={({ color, size }) => <House size={size} strokeWidth={2} color={color} />}
+                onPress={() => navigation.navigate('DashboardTab', { screen: 'Dashboard' })}
             />
             <DrawerItem
+                {...itemProps('ProfileScreen')}
                 label="Profile"
-                icon={({ color, size }) => <UserCircleIcon name="user" size={size} color={color} />}
+                icon={({ color, size }) => <CircleUser size={size} strokeWidth={2} color={color} />}
                 onPress={() => navigation.navigate('ProfileScreen')}
-                focused={state.routeNames[state.index] === 'ProfileScreen'} // Check if the item is active
-                activeTintColor="#00B8C0" // Active screen color
-                inactiveTintColor="#999999" // Inactive screens color
             />
             <DrawerItem
+                {...itemProps('BasketScreen')}
                 label="Basket"
-                icon={({ color, size }) => <ShoppingCartIcon name="shopping-cart" size={size} color={color} />}
+                icon={({ color, size }) => <ShoppingCart size={size} strokeWidth={2} color={color} />}
                 onPress={() => navigation.navigate('BasketScreen')}
-                focused={state.routeNames[state.index] === 'BasketScreen'} // Check if the item is active
-                activeTintColor="#00B8C0" // Active screen color
-                inactiveTintColor="#999999" // Inactive screens color
             />
-    
-            {/* Add more DrawerItems for other screens */}
         </DrawerContentScrollView>
     );
 }
-  
 
 export default function App() {
+    const { isDark, colors } = useAppTheme();
+    const [ready, setReady] = useState(false);
+    // A saved session (including a demo session) opens the app directly, without flashing the Start screen.
+    const [initialRoute] = useState(() => (getAuth().currentUser ? 'DashboardDrawer' : 'StartScreen'));
+
+    useEffect(() => {
+        schemeRestored.finally(() => setReady(true));
+        const timer = setTimeout(hideSplash, SPLASH_TIMEOUT_MS);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Root view background (behind the keyboard, during transitions) follows the theme.
+    useEffect(() => {
+        SystemUI.setBackgroundColorAsync(colors.background).catch(() => {});
+    }, [colors.background]);
+
+    const navigationTheme = useMemo(() => createNavigationTheme(isDark), [isDark]);
+
+    if (!ready) return null;
+
     return (
         <SafeAreaProvider>
             <ReduxProvider store={store}>
-                <PaperProvider theme={theme}>
-                    <NavigationContainer>
-                        <Stack.Navigator initialRouteName="StartScreen" screenOptions={{ headerShown: false }} >
-                            <Stack.Screen name="StartScreen" component={StartScreen} />
-                            <Stack.Screen name="LoginScreen" component={LoginScreen} />
-                            <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
-                            <Stack.Screen name="RestaurantScreen" component={RestaurantScreen} />
-                            <Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen} />
-                            <Stack.Screen name="PreparingOrderScreen" component={PreparingOrderScreen} />
-                            <Stack.Screen name="DeliveryScreen" component={DeliveryScreen} />
-                            <Stack.Screen name="AddFirestoreData" component={AddFirestoreData} />
-                            <Stack.Screen name="DashboardDrawer" component={DashboardDrawer} />
-                        </Stack.Navigator>
-                    </NavigationContainer>
-                </PaperProvider>
+                <StatusBar style={isDark ? 'light' : 'dark'} />
+                <NavigationContainer theme={navigationTheme}>
+                    <Stack.Navigator
+                        initialRouteName={initialRoute}
+                        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
+                    >
+                        <Stack.Screen name="StartScreen" component={StartScreen} />
+                        <Stack.Screen name="LoginScreen" component={LoginScreen} />
+                        <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
+                        <Stack.Screen name="RestaurantScreen" component={RestaurantScreen} />
+                        <Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen} />
+                        <Stack.Screen name="PreparingOrderScreen" component={PreparingOrderScreen} />
+                        <Stack.Screen name="DeliveryScreen" component={DeliveryScreen} />
+                        <Stack.Screen name="DashboardDrawer" component={DashboardDrawer} />
+                    </Stack.Navigator>
+                </NavigationContainer>
             </ReduxProvider>
         </SafeAreaProvider>
     );
@@ -107,32 +147,20 @@ export default function App() {
 
 // Wrapper component for Dashboard screen to render Drawer Navigator
 function DashboardDrawer() {
+    const { colors } = useAppTheme();
     return (
         <Drawer.Navigator
             initialRouteName="DashboardTab"
             drawerContent={(props) => <CustomDrawerContent {...props} />}
+            screenOptions={{
+                headerShown: false,
+                drawerStyle: { backgroundColor: colors.surface },
+                sceneStyle: { backgroundColor: colors.background },
+            }}
         >
-            <Drawer.Screen
-                name="DashboardTab"
-                component={DashboardTabs}
-                options={{
-                headerShown: false, // Hide the header for this screen
-                }}
-            />
-            <Drawer.Screen
-                name="ProfileScreen"
-                component={ProfileScreen}
-                options={{
-                headerShown: false, // Hide the header for this screen
-                }}
-            />
-            <Drawer.Screen
-                name="BasketScreen"
-                component={BasketScreen}
-                options={{
-                headerShown: false, // Hide the header for this screen
-                }}
-            />
+            <Drawer.Screen name="DashboardTab" component={DashboardTabs} />
+            <Drawer.Screen name="ProfileScreen" component={ProfileScreen} />
+            <Drawer.Screen name="BasketScreen" component={BasketScreen} />
         </Drawer.Navigator>
     );
 }
@@ -140,35 +168,35 @@ function DashboardDrawer() {
 
 // Wrapper component for Dashboard screen to render Tab Navigator
 function DashboardTabs() {
+    const { colors } = useAppTheme();
     return (
         <Tab.Navigator
             initialRouteName="Dashboard"
             screenOptions={({ route }) => ({
                 headerShown: false,
-                tabBarActiveTintColor: '#00B8C0',
-                tabBarInactiveTintColor: '#999999',
-                tabBarLabelStyle: { display: 'none' },
-                tabBarStyle: {
-                    backgroundColor: '#ffffff',
-                    height: 60,
-                },
+                tabBarShowLabel: false,
+                tabBarActiveTintColor: colors.brand,
+                tabBarInactiveTintColor: colors.muted,
+                // No fixed height: the bar adds the gesture-navigation inset itself.
+                tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+                sceneStyle: { backgroundColor: colors.background },
                 tabBarIcon: ({ color }) => {
                     if (route.name === 'Dashboard') {
-                        return <HomeIcon color={color} size={24} />;
+                        return <House color={color} size={24} strokeWidth={2} />;
                     } else if (route.name === 'BasketScreen') {
-                        return <ShoppingCartIcon color={color} size={24} />;
+                        return <ShoppingCart color={color} size={24} strokeWidth={2} />;
                     } else if (route.name === 'ProfileScreen') {
-                        return <UserCircleIcon color={color} size={24} />;
+                        return <CircleUser color={color} size={24} strokeWidth={2} />;
                     } else if (route.name === 'AllStoresScreen') {
-                        return <BuildingStorefrontIcon color={color} size={24} />;
+                        return <Store color={color} size={24} strokeWidth={2} />;
                     }
                 },
             })}
         >
-            <Tab.Screen name="Dashboard" component={Dashboard} />
-            <Tab.Screen name="AllStoresScreen" component={AllStoresScreen} />
-            <Tab.Screen name="BasketScreen" component={BasketScreen} />
-            <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
+            <Tab.Screen name="Dashboard" component={Dashboard} options={{ tabBarAccessibilityLabel: 'Home' }} />
+            <Tab.Screen name="AllStoresScreen" component={AllStoresScreen} options={{ tabBarAccessibilityLabel: 'All stores' }} />
+            <Tab.Screen name="BasketScreen" component={BasketScreen} options={{ tabBarAccessibilityLabel: 'Basket' }} />
+            <Tab.Screen name="ProfileScreen" component={ProfileScreen} options={{ tabBarAccessibilityLabel: 'Profile' }} />
         </Tab.Navigator>
     );
 }

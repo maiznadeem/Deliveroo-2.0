@@ -15,3 +15,16 @@ web-build/
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
+
+# Expo prebuild output (CNG): android/ and ios/ are generated, never committed
+/android
+/ios
+
+# Firebase config files (provided per developer / CI secret)
+google-services.json
+GoogleService-Info.plist
+
+# Local env (dist/ above holds the release APK built by scripts/release-android.mjs)
+.env
+.env.local
+*.keystore

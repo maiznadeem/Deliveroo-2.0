@@ -1,129 +1,158 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native'
-import { StatusBar } from 'expo-status-bar'
+import React, { useContext, useMemo } from 'react'
+import { View, TouchableOpacity, Image, ScrollView } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { XCircleIcon } from 'react-native-heroicons/solid'
-import Currency from 'react-currency-formatter'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
+import { CircleX, Minus, Plus } from 'lucide-react-native'
+import StorageImage from '../components/StorageImage'
+import Text from '../components/ui/Text'
+import IconButton from '../components/ui/IconButton'
+import { formatCurrency } from '../helpers/formatCurrency'
+import { navigateToDashboardTab } from '../helpers/navigation'
 import { useDispatch, useSelector } from 'react-redux'
 import { selectRestaurant } from '../features/restaurantSlice'
 import { removeFromBasket, selectBasketItems, addToBasket, selectBasketTotal } from '../features/basketSlice'
+import { useAppTheme } from '../hooks/useAppTheme'
+
+const DELIVERY_FEE = 5.99
 
 const BasketScreen = () => {
 
     const navigation = useNavigation()
+    const { colors } = useAppTheme()
+    const insets = useSafeAreaInsets()
+    // Inside the tab bar the bar already covers the gesture inset; as a drawer screen it does not.
+    const inTabs = useContext(BottomTabBarHeightContext) !== undefined
     const restaurant = useSelector(selectRestaurant)
     const items = useSelector(selectBasketItems)
     const basketTotal = useSelector(selectBasketTotal)
     const dispatch = useDispatch()
 
-    const [groupedItemsInBasket, setGroupedItemsInBasket] = useState([])
-
-    useEffect(()=>{
-        const groupedItems = items.reduce((results, item)=>{
-            (results[item.id] = results[item.id] || []).push(item)
-            return results
-        }, {})
-        setGroupedItemsInBasket(groupedItems)
-    }, [items])
+    const groupedItemsInBasket = useMemo(() => items.reduce((results, item) => {
+        (results[item.id] = results[item.id] || []).push(item)
+        return results
+    }, {}), [items])
 
     if (items.length == 0) {
         return (
-            <SafeAreaView className="flex-1 items-center justify-center">
-                <Image 
+            <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-background px-8 dark:bg-background-dark">
+                <Image
                     source={require("../assets/Basket.png")}
                     className="h-40 w-40"
+                    resizeMode="contain"
                 />
-                <Text className="text-lg text-gray-400 p-4">Looks empty in here...</Text>
-                <TouchableOpacity 
-                        className="rounded-lg bg-[#00B8C0] px-5 py-2"
-                        onPress={() => navigation.navigate("Dashboard")}
-                    >
-                        <Text className="text-center text-white text-md font-bold">Order Now</Text>
+                <Text className="px-4 py-4 text-lg text-muted dark:text-muted-dark">Looks empty in here...</Text>
+                <TouchableOpacity
+                    accessibilityRole="button"
+                    activeOpacity={0.85}
+                    className="h-12 items-center justify-center rounded-xl bg-brand px-6"
+                    onPress={() => navigateToDashboardTab(navigation)}
+                >
+                    <Text className="font-bold text-white">Order Now</Text>
                 </TouchableOpacity>
             </SafeAreaView>
         )
     }
-    
+
+    const sectionClass = 'bg-surface dark:bg-surface-dark'
+    const borderClass = 'border-border dark:border-border-dark'
+
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <StatusBar backgroundColor="white" barStyle="dark-content" />
-            <View className="flex-1 bg-gray-100">
-                <View className="p-5 border-b border-[#00B8C0] bg-white shadow-xs">
-                    <Text className="text-lg font-bold text-center">Basket</Text>
-                    <Text className="text-center text-gray-400">{restaurant.title}</Text>
+        <View className="flex-1 bg-background dark:bg-background-dark">
+            {/* Header: title centered, close button in a fixed slot on the right */}
+            <SafeAreaView edges={['top']} className={`${sectionClass} border-b-2 border-brand`}>
+                <View className="flex-row items-center px-2 py-2">
+                    <View className="w-11" />
+                    <View className="flex-1 items-center px-2">
+                        <Text className="text-lg font-bold">Basket</Text>
+                        <Text className="text-xs text-muted dark:text-muted-dark" numberOfLines={1}>{restaurant.title}</Text>
+                    </View>
+                    <IconButton accessibilityLabel="Close basket" onPress={() => navigation.goBack()}>
+                        <CircleX size={28} strokeWidth={2} color={colors.brand} />
+                    </IconButton>
                 </View>
-                <TouchableOpacity
-                    onPress={navigation.goBack}
-                    className="rounded-full bg-gray-100 absolute top-6 right-6"
-                >
-                    <XCircleIcon color="#00B8C0" size={35} />
+            </SafeAreaView>
+
+            <View className={`${sectionClass} ${borderClass} mt-4 flex-row items-center gap-3 border-y px-4 py-2`}>
+                <Image
+                    source={require('../assets/rider.webp')}
+                    className="h-10 w-10 rounded-full"
+                    resizeMode="cover"
+                />
+                <Text className="flex-1 text-sm">Delivery in 30-45 min</Text>
+                <TouchableOpacity accessibilityRole="button" className="min-h-11 justify-center pl-2">
+                    <Text className="text-sm font-semibold text-link dark:text-link-dark">Change</Text>
                 </TouchableOpacity>
-                <View className="flex-row items-center space-x-4 px-4 py-3 bg-white my-5">
-                    <Image 
-                        source={{ uri: 'https://firebasestorage.googleapis.com/v0/b/deliveroo-2-c6550.appspot.com/o/Delivery%20Guy.png?alt=media&token=3111e8f6-a485-43db-8353-4a534e643fd7' }}
-                        className="h-7 w-7 bg-gray-300 p-4 rounded-full"
-                    />
-                    <Text className="flex-1">Delivery in 30-45 min</Text>
-                    <TouchableOpacity>
-                        <Text className="text-[#00B8C0]">Change</Text>
-                    </TouchableOpacity>
-                </View>
-                <ScrollView className="divide-y divide-gray-200">
-                    {Object.entries(groupedItemsInBasket).map(([key, items]) => (
-                        <View key={key} className="flex-row items-center space-x-3 bg-white py-2 px-5">
-                            <Text className="text-[#00B8C0]">{items.length} x</Text>
-                            <Image 
-                                source={{uri: items[0]?.image}}
+            </View>
+
+            <ScrollView className="mt-4 flex-1" contentContainerStyle={{ paddingBottom: 16 }}>
+                <View className={`${sectionClass} ${borderClass} border-y`}>
+                    {Object.entries(groupedItemsInBasket).map(([key, group], index) => (
+                        <View
+                            key={key}
+                            className={`${borderClass} flex-row items-center gap-3 px-4 py-3 ${index > 0 ? 'border-t' : ''}`}
+                        >
+                            <StorageImage
+                                source={{ uri: group[0]?.image }}
                                 className="h-12 w-12 rounded-full"
+                                resizeMode="cover"
                             />
-                            <Text className="flex-1">{items[0]?.name}</Text>
-                            <Text className="text-gray-600">
-                                <Currency quantity={items[0]?.price} currency='USD'/>
-                            </Text>
-                            <TouchableOpacity
-                                className="py-2 pl-2"
-                                onPress={() => dispatch(addToBasket(items[0]))}
-                            >
-                                <Text className="text-[#00B8C0] text-xs text-center">Add</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                className="py-2 pl-2"
-                                onPress={() => dispatch(removeFromBasket({ id: key }))}
-                            >
-                                <Text className="text-[#00B8C0] text-xs text-center">Remove</Text>
-                            </TouchableOpacity>
+                            <View className="flex-1">
+                                <Text className="text-sm font-semibold" numberOfLines={2}>{group[0]?.name}</Text>
+                                <Text className="mt-0.5 text-xs text-muted dark:text-muted-dark">
+                                    {formatCurrency(group[0]?.price)}
+                                </Text>
+                            </View>
+                            <View className="flex-row items-center">
+                                <TouchableOpacity
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Remove one ${group[0]?.name}`}
+                                    className="h-11 w-11 items-center justify-center"
+                                    onPress={() => dispatch(removeFromBasket({ id: key }))}
+                                >
+                                    <Minus size={20} strokeWidth={2} color={colors.brand} />
+                                </TouchableOpacity>
+                                <Text className="min-w-6 text-center text-base font-bold">{group.length}</Text>
+                                <TouchableOpacity
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Add one ${group[0]?.name}`}
+                                    className="h-11 w-11 items-center justify-center"
+                                    onPress={() => dispatch(addToBasket(group[0]))}
+                                >
+                                    <Plus size={20} strokeWidth={2} color={colors.brand} />
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     ))}
-                </ScrollView>
-                <View className="p-5 pb-10 bg-white mt-5 space-y-4">
-                    <View className="flex-row justify-between">
-                        <Text className="text-gray-400">Subtotal</Text>
-                        <Text className="text-gray-400">
-                            <Currency quantity={basketTotal} currency='USD'/>
-                        </Text>
-                    </View>
-                    <View className="flex-row justify-between">
-                        <Text className="text-gray-400">Delivery Fee</Text>
-                        <Text className="text-gray-400">
-                            <Currency quantity={5.99} currency='USD'/>
-                        </Text>
-                    </View>
-                    <View className="flex-row justify-between">
-                        <Text>Order Total</Text>
-                        <Text className="font-extrabold">
-                            <Currency quantity={basketTotal + 5.99} currency='USD'/>
-                        </Text>
-                    </View>
-                    <TouchableOpacity 
-                        className="rounded-lg bg-[#00B8C0] p-4"
-                        onPress={() => navigation.navigate("PreparingOrderScreen")}
-                    >
-                        <Text className="text-center text-white text-lg font-bold">Place Order</Text>
-                    </TouchableOpacity>
                 </View>
+            </ScrollView>
+
+            <View
+                className={`${sectionClass} ${borderClass} gap-3 border-t px-4 pt-4`}
+                style={{ paddingBottom: 16 + (inTabs ? 0 : insets.bottom) }}
+            >
+                <View className="flex-row justify-between">
+                    <Text className="text-muted dark:text-muted-dark">Subtotal</Text>
+                    <Text className="text-muted dark:text-muted-dark">{formatCurrency(basketTotal)}</Text>
+                </View>
+                <View className="flex-row justify-between">
+                    <Text className="text-muted dark:text-muted-dark">Delivery Fee</Text>
+                    <Text className="text-muted dark:text-muted-dark">{formatCurrency(DELIVERY_FEE)}</Text>
+                </View>
+                <View className="flex-row justify-between">
+                    <Text className="font-semibold">Order Total</Text>
+                    <Text className="font-extrabold">{formatCurrency(basketTotal + DELIVERY_FEE)}</Text>
+                </View>
+                <TouchableOpacity
+                    accessibilityRole="button"
+                    activeOpacity={0.85}
+                    className="mt-1 h-12 items-center justify-center rounded-xl bg-brand"
+                    onPress={() => navigation.navigate("PreparingOrderScreen")}
+                >
+                    <Text className="text-base font-bold text-white">Place Order</Text>
+                </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </View>
     )
 }
 

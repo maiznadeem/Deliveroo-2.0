@@ -1,64 +1,46 @@
-import { DefaultTheme } from 'react-native-paper';
+import { DefaultTheme as NavigationLightTheme, DarkTheme as NavigationDarkTheme } from '@react-navigation/native';
+import { palette, fontFamilies } from './palette';
 
-export const theme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    text: '#000000',
-    primary: '#00B8C0',
-    secondary: '#999999',
-    error: '#f13a59',
-  },
+export { palette, fontFamilies };
+
+// Colors for things className can't reach (icon props, navigation/Paper themes, ActivityIndicator...).
+export function getColors(isDark) {
+  const mode = isDark ? palette.dark : palette.light;
+  return { ...mode, brand: palette.brand, brandPressed: palette.brandPressed, danger: palette.danger, star: palette.star };
 }
 
-export const COLORS = {
-  primary: "#35B8B2",
-  secondary: "#4D626C",
-  white: "#FFF",
-  gray: "#74858C",
-};
+// React Navigation 7 theme fonts need fontWeight; the family already carries the weight.
+const navFont = (fontFamily) => ({ fontFamily, fontWeight: '400' });
 
-export const SIZES = {
-  base: 8,
-  small: 12,
-  font: 14,
-  medium: 16,
-  large: 18,
-  extraLarge: 24,
-};
-
-export const SHADOWS = {
-  light: {
-    shadowColor: COLORS.gray,
-    shadowOffset: {
-      width: 0,
-      height: 1,
+export function createNavigationTheme(isDark) {
+  const base = isDark ? NavigationDarkTheme : NavigationLightTheme;
+  const c = getColors(isDark);
+  return {
+    ...base,
+    dark: isDark,
+    colors: {
+      ...base.colors,
+      primary: c.brand,
+      background: c.background,
+      card: c.surface,
+      text: c.text,
+      border: c.border,
+      notification: c.brand,
     },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-
-    elevation: 3,
-  },
-  medium: {
-    shadowColor: COLORS.gray,
-    shadowOffset: {
-      width: 0,
-      height: 3,
+    fonts: {
+      regular: navFont(fontFamilies.regular),
+      medium: navFont(fontFamilies.medium),
+      bold: navFont(fontFamilies.bold),
+      heavy: navFont(fontFamilies.extrabold),
     },
-    shadowOpacity: 0.29,
-    shadowRadius: 4.65,
+  };
+}
 
-    elevation: 7,
-  },
-  dark: {
-    shadowColor: COLORS.gray,
-    shadowOffset: {
-      width: 0,
-      height: 7,
-    },
-    shadowOpacity: 0.41,
-    shadowRadius: 9.11,
-
-    elevation: 14,
-  },
+// Light mode: elevation. Dark mode: surfaces get a border instead (see the `dark:border` classes).
+export const cardShadow = {
+  shadowColor: '#0B1F24',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08,
+  shadowRadius: 8,
+  elevation: 3,
 };

@@ -1,24 +1,25 @@
-import React, { useEffect, useState } from 'react'
-import { TouchableOpacity, StyleSheet, View } from 'react-native'
-import { Text } from 'react-native-paper'
-import Background from '../components/AuthComponents/Background'
-import Logo from '../components/AuthComponents/Logo'
-import Header from '../components/AuthComponents/Header'
+import React, { useEffect, useRef, useState } from 'react'
+import { TouchableOpacity, View } from 'react-native'
+import { Lock, Mail } from 'lucide-react-native'
+import Text from '../components/ui/Text'
+import AuthLayout from '../components/AuthComponents/AuthLayout'
 import Button from '../components/AuthComponents/Button'
 import TextInput from '../components/AuthComponents/TextInput'
-import BackButton from '../components/AuthComponents/BackButton'
-import { theme } from '../core/theme'
+import DemoButton from '../components/AuthComponents/DemoButton'
+import OrDivider from '../components/AuthComponents/OrDivider'
 import { emailValidator } from '../helpers/emailValidator'
 import { passwordValidator } from '../helpers/passwordValidator'
-import { auth } from '../firebase/config'
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from '@react-native-firebase/auth'
 
 export default function LoginScreen({ navigation }) {
 
     const [email, setEmail] = useState({ value: '', error: '' })
     const [password, setPassword] = useState({ value: '', error: '' })
+    const [loading, setLoading] = useState(false)
+    const passwordRef = useRef(null)
 
     useEffect(()=>{
-        const unsubscribe = auth.onAuthStateChanged((user => {
+        const unsubscribe = onAuthStateChanged(getAuth(), (user => {
             if (user) {
                 navigation.reset({
                     index: 0,
@@ -31,87 +32,75 @@ export default function LoginScreen({ navigation }) {
     },[])
 
     const onLoginPressed = () => {
-        
+
         const emailError = emailValidator(email.value)
         const passwordError = passwordValidator(password.value)
         if (emailError || passwordError) {
-        setEmail({ ...email, error: emailError })
-        setPassword({ ...password, error: passwordError })
-        return
+            setEmail({ ...email, error: emailError })
+            setPassword({ ...password, error: passwordError })
+            return
         }
 
-        auth
-            .signInWithEmailAndPassword(email.value, password.value)
-            .then(userCredentials => {
-                const user = userCredentials.user
-            })
+        setLoading(true)
+        signInWithEmailAndPassword(getAuth(), email.value, password.value)
             .catch(error => alert(error.message))
+            .finally(() => setLoading(false))
 
     }
 
     return (
-
-        <Background>
-            <BackButton goBack={navigation.goBack} />
-            <Logo />
-            <Header>Welcome back.</Header>
+        <AuthLayout onBack={navigation.goBack} title="Welcome back" subtitle="Log in to keep your orders and favourites close.">
             <TextInput
                 label="Email"
+                icon={Mail}
+                placeholder="you@example.com"
                 returnKeyType="next"
                 value={email.value}
                 onChangeText={(text) => setEmail({ value: text, error: '' })}
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                submitBehavior="submit"
                 error={!!email.error}
                 errorText={email.error}
                 autoCapitalize="none"
-                autoCompleteType="email"
+                autoComplete="email"
                 textContentType="emailAddress"
                 keyboardType="email-address"
             />
             <TextInput
+                ref={passwordRef}
                 label="Password"
+                icon={Lock}
+                placeholder="Your password"
                 returnKeyType="done"
                 value={password.value}
                 onChangeText={(text) => setPassword({ value: text, error: '' })}
+                onSubmitEditing={onLoginPressed}
                 error={!!password.error}
                 errorText={password.error}
+                autoComplete="current-password"
+                textContentType="password"
                 secureTextEntry
             />
-            <View style={styles.forgotPassword}>
+            <View className="mb-3 w-full items-end">
                 <TouchableOpacity
-                onPress={() => navigation.navigate('ResetPasswordScreen')}
+                    accessibilityRole="link"
+                    className="min-h-11 justify-center"
+                    onPress={() => navigation.navigate('ResetPasswordScreen')}
                 >
-                <Text style={styles.forgot}>Forgot your password?</Text>
+                    <Text className="text-sm font-semibold text-link dark:text-link-dark">Forgot your password?</Text>
                 </TouchableOpacity>
             </View>
-            <Button mode="contained" onPress={onLoginPressed}>
-                Login
+            <Button mode="contained" onPress={onLoginPressed} loading={loading}>
+                Log in
             </Button>
-            <View style={styles.row}>
-                <Text>Don’t have an account? </Text>
-                <TouchableOpacity onPress={() => navigation.replace('RegisterScreen')}>
-                <Text style={styles.link}>Sign up</Text>
+            <OrDivider />
+            <DemoButton navigation={navigation} />
+            <View className="mt-3 flex-row items-center justify-center">
+                <Text className="text-muted dark:text-muted-dark">New here? </Text>
+                <TouchableOpacity accessibilityRole="link" className="min-h-11 justify-center" onPress={() => navigation.replace('RegisterScreen')}>
+                    <Text className="font-bold text-link dark:text-link-dark">Create an account</Text>
                 </TouchableOpacity>
             </View>
-        </Background>
+        </AuthLayout>
     )
 }
-
-const styles = StyleSheet.create({
-    forgotPassword: {
-        width: '100%',
-        alignItems: 'flex-end',
-        marginBottom: 24,
-    },
-    row: {
-        flexDirection: 'row',
-        marginTop: 4,
-    },
-    forgot: {
-        fontSize: 13,
-        color: theme.colors.secondary,
-    },
-    link: {
-        fontWeight: 'bold',
-        color: theme.colors.primary,
-    },
-})
