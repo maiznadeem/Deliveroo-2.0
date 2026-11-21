@@ -1,4 +1,4 @@
-![Banner Image](https://github.com/MaizNadeem/Deliveroo-2.0/blob/main/Screenshots/Deliveroo-Banner.png)
+![Deliveroo 2.0: start, dashboard, restaurant, basket and delivery screens](docs/screenshots/banner.webp)
 
 # Deliveroo App
 
@@ -18,23 +18,32 @@ This installation method is for Android only.
 
 The "Deliveroo" app is a food delivery demo. It has these screens:
 
-- **Start, Login, Register and Reset Password:** account creation and sign-in with email and password.
+- **Start, Login, Register and Reset Password:** account creation and sign-in with email and password, or **Try the demo** without an account.
 - **Dashboard:** browse categories and featured restaurants.
 - **Restaurant:** restaurant details and menu, add dishes to the basket.
 - **Basket:** review and edit the order.
 - **Preparing Order and Delivery:** order confirmation animation, then a map with the restaurant, your location and the route.
-- **Profile:** the signed-in account and sign out.
+- **Profile:** the signed-in account, the light/dark mode switch and sign out.
 
 ## Screenshots
 
-<div style="display: inline_block" align="center">
-<br>
-	<img align="center" alt="Deliveroo" width="180" src="https://github.com/MaizNadeem/Deliveroo-2.0/blob/main/Screenshots/4.jpg">
-	<img align="center" alt="Deliveroo" width="180" src="https://github.com/MaizNadeem/Deliveroo-2.0/blob/main/Screenshots/5.jpg">
-	<img align="center" alt="Deliveroo" width="180" src="https://github.com/MaizNadeem/Deliveroo-2.0/blob/main/Screenshots/6.jpg">
-	<img align="center" alt="Deliveroo" width="180" src="https://github.com/MaizNadeem/Deliveroo-2.0/blob/main/Screenshots/7.jpg">
-</div>
-<br>
+Light mode
+
+<p align="center">
+  <img alt="Start screen" width="180" src="docs/screenshots/start-light.webp">
+  <img alt="Dashboard" width="180" src="docs/screenshots/dashboard-light.webp">
+  <img alt="Restaurant menu" width="180" src="docs/screenshots/restaurant-light.webp">
+  <img alt="Basket" width="180" src="docs/screenshots/basket-light.webp">
+</p>
+
+Dark mode
+
+<p align="center">
+  <img alt="Login" width="180" src="docs/screenshots/login-dark.webp">
+  <img alt="Restaurant menu" width="180" src="docs/screenshots/restaurant-dark.webp">
+  <img alt="Delivery map with route" width="180" src="docs/screenshots/delivery-dark.webp">
+  <img alt="Profile with dark mode switch" width="180" src="docs/screenshots/profile-dark.webp">
+</p>
 
 ## Technologies
 
