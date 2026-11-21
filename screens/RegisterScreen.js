@@ -11,7 +11,7 @@ import { theme } from '../core/theme'
 import { emailValidator } from '../helpers/emailValidator'
 import { passwordValidator } from '../helpers/passwordValidator'
 import { nameValidator } from '../helpers/nameValidator'
-import { auth } from '../firebase/config'
+import { getAuth, createUserWithEmailAndPassword } from '@react-native-firebase/auth'
 
 export default function RegisterScreen({ navigation }) {
 
@@ -29,18 +29,15 @@ export default function RegisterScreen({ navigation }) {
         setPassword({ ...password, error: passwordError })
         return
         }
-        auth
-            .createUserWithEmailAndPassword(email.value, password.value)
-            .then(userCredentials => {
-                const user = userCredentials.user
-                console.log(user.email)
+        createUserWithEmailAndPassword(getAuth(), email.value, password.value)
+            .then(() => {
+                // Only enter the app once the account exists (Firestore requires a signed-in user)
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'DashboardDrawer' }],
+                })
             })
             .catch(error => alert(error.message))
-
-        navigation.reset({
-        index: 0,
-        routes: [{ name: 'DashboardDrawer' }],
-        })
     }
 
     return (

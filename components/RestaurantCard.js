@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { StarIcon } from 'react-native-heroicons/solid'
 import { MapPinIcon } from 'react-native-heroicons/outline'
 import { useNavigation } from '@react-navigation/native'
+import { getDoc } from '@react-native-firebase/firestore'
 
 const RestaurantCard = ({
     id,
@@ -18,14 +19,14 @@ const RestaurantCard = ({
 }) => {
 
     const navigation = useNavigation()
-    const geopointObject = { ...geopoint }
+    const geopointObject = geopoint // already a plain { latitude, longitude } (see FeaturedRow)
 
     const fetchDishes = () => {
 
         const dishPromises = dishes.map((dishRef) => {
-            return dishRef.get()
+            return getDoc(dishRef)
                 .then((dishSnapshot) => {
-                    if (dishSnapshot.exists) {
+                    if (dishSnapshot.exists()) {
                         return dishSnapshot.data();
                     } else {
                         console.log('Document does not exist');

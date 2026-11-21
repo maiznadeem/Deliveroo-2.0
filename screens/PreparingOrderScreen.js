@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react'
-import { Video } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Animatable from 'react-native-animatable'
 import * as Progress from 'react-native-progress'
-import { useNavigation } from '@react-navigation/core';
+import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import { clearBasket } from '../features/basketSlice';
 
@@ -12,6 +12,12 @@ const PreparingOrderScreen = () => {
 
     const navigation = useNavigation()
     const dispatch = useDispatch()
+
+    const player = useVideoPlayer(require('../assets/Order.mp4'), (p) => {
+        p.loop = true
+        p.muted = true
+        p.play()
+    })
 
     useEffect(()=>{
         setTimeout(() => {
@@ -27,12 +33,11 @@ const PreparingOrderScreen = () => {
                     animation="slideInUp"
                     iterationCount={1}
                 >
-                    <Video
-                      source={require('../assets/Order.mp4')}
-                      resizeMode="cover"
-                      className="h-96 w-96"
-                      shouldPlay
-                      isLooping
+                    <VideoView
+                      player={player}
+                      contentFit="cover"
+                      nativeControls={false}
+                      style={{ width: 384, height: 384 }} // NativeWind className isn't mapped onto VideoView
                     />
                 </Animatable.View>
                 <Animatable.Text

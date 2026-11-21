@@ -2,35 +2,28 @@
 
 # Deliveroo App
 
-Deliveroo Clone with React Native Expo (React Navigation, Redux, Tailwind CSS & Firebase)
+Deliveroo clone built with React Native (Expo SDK 58), React Navigation, Redux Toolkit, NativeWind (Tailwind CSS) and React Native Firebase.
 
 ## Installation
 
-To install the Deliveroo app on your Android device, follow these steps:
+To install the Deliveroo app on an Android device:
 
-- Download the APK file from the following link: [Download APK](https://drive.google.com/file/d/1yGeEmzMSG1cvEjTx2Am3kkB4xIG3apDv/view?usp=drive_link)
-- Once the APK is downloaded, open it on your Android device.
-- If prompted, allow the installation of apps from unknown sources in your device settings.
-- Follow the on-screen instructions to install the app.
-- Once the installation is complete, you can open the app and start using the Deliveroo Clone with React Native!
+- Download the latest APK (`deliveroo-v<version>.apk`) from [GitHub Releases](https://github.com/MaizNadeem/Deliveroo-2.0/releases). Every release also ships a `.sha256` file to verify the download.
+- Open the APK on your device and, if prompted, allow installation from unknown sources.
+- Follow the on-screen instructions, then open the app.
 
-Please note that this installation method is for Android devices only.
+This installation method is for Android only.
 
 ## About the Project
 
-The "Deliveroo" app is a React Native Expo application for food delivery. It utilizes a variety of technologies to create a comprehensive solution. Here's an overview of the project:
+The "Deliveroo" app is a food delivery demo. It has these screens:
 
-### Project Description
-
-The "Deliveroo" app aims to provide a seamless food delivery experience to users. It offers a range of screens to facilitate different functionalities, including:
-
-- **Splash Screen:**		Initial screen with branding and loading indicators.
-- **Login and Signup Screens:**	Enable users to create accounts or authenticate for personalized features.
-- **Dashboard Screen:**		Main screen to browse, search restaurants, explore menus, and place orders.
-- **Basket Screen:**		Display items in the user's basket for order review and modification.
-- **Profile Screen:**		Manage personal info, view order history, and customize preferences.
-- **Restaurant Screen:**	Detailed info about a specific restaurant, including menu, reviews, and location.
-- **Delivery Screen:**		Track the status and progress of ongoing food delivery, including estimated arrival time.
+- **Start, Login, Register and Reset Password:** account creation and sign-in with email and password.
+- **Dashboard:** browse categories and featured restaurants.
+- **Restaurant:** restaurant details and menu, add dishes to the basket.
+- **Basket:** review and edit the order.
+- **Preparing Order and Delivery:** order confirmation animation, then a map with the restaurant, your location and the route.
+- **Profile:** the signed-in account and sign out.
 
 ## Screenshots
 
@@ -47,79 +40,103 @@ The "Deliveroo" app aims to provide a seamless food delivery experience to users
 
 ![React](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Expo](https://img.shields.io/badge/expo-1C1E24?style=for-the-badge&logo=expo&logoColor=#D04A37)
-![Git](https://img.shields.io/badge/GIT-E44C30?style=for-the-badge&logo=git&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase-FFC900?style=for-the-badge&logo=Firebase&logoColor=white)
-![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
 ![Redux](https://img.shields.io/badge/redux-%23593d88.svg?style=for-the-badge&logo=redux&logoColor=white)
 ![Google Cloud](https://img.shields.io/badge/GoogleCloud-%234285F4.svg?style=for-the-badge&logo=google-cloud&logoColor=white)
-![Apollo-GraphQL](https://img.shields.io/badge/-ApolloGraphQL-311C87?style=for-the-badge&logo=apollo-graphql)
-![Yarn](https://img.shields.io/badge/yarn-%232C8EBB.svg?style=for-the-badge&logo=yarn&logoColor=white)
-![Visual Studio Code](https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
-![Jest](https://img.shields.io/badge/-jest-%23C21325?style=for-the-badge&logo=jest&logoColor=white)
 
-### Front-end:
-- **React Native:** A popular JavaScript framework for building native mobile applications.
-- **Redux:** A state management library that helps manage the app's global state and facilitates data flow between components.
-- **React Navigation:** A routing and navigation library for React Native that allows seamless navigation between different screens.
-- **Tailwind CSS:** A utility-first CSS framework used for styling the app's user interface.
+### App
+- **React Native 0.88 / Expo SDK 58** (New Architecture), plain JavaScript, npm.
+- **React Navigation 7:** a root stack containing a drawer, which contains bottom tabs.
+- **Redux Toolkit:** basket and selected restaurant state.
+- **NativeWind 4 (Tailwind CSS 3):** `className` styling.
+- **expo-video:** the order-preparing animation.
 
-### API:
-- **Google Maps (Cloud API):** An API provided by Google Maps that enables integration with maps and location-based services.
+### Firebase (React Native Firebase, modular API)
+- **Authentication:** email and password sign-in and registration.
+- **Firestore:** read-only. The `Restaurant`, `Categories` and `Featured` collections hold the data; restaurant images are served from Firebase Storage URLs stored in the documents.
+- **App Check:** Play Integrity in release builds, a debug provider in development builds.
 
-### Back-end (Firebase):
-- **Firestore:** A NoSQL database provided by Firebase for storing and syncing data in real-time.
-- **Firebase Authentication:** Firebase service for user authentication, enabling users to sign up and log in securely.
-- **Storage Bucket:** Firebase's storage service for storing and serving user-generated content like images and videos.
-- **Cloud Functions:** Serverless functions that run in response to events in Firebase, allowing custom server-side logic.
-- **GraphQL:** A query language and runtime that enables efficient communication between the client and server, reducing unnecessary data transfers and improving performance.
-- **Node JS:** A server-side JavaScript runtime that powers the backend server of the app, handling authentication, data retrieval, and server-side operations.
+There is no custom backend: no Cloud Functions, GraphQL or Node server. Firestore rules are "signed-in users only, no client writes" ([`firestore.rules`](firestore.rules); deploy changes with the Firebase console or CLI).
+
+Storage images need the Firebase project on the Blaze plan: since February 2026 the default `*.appspot.com` bucket is not reachable on the Spark plan.
+
+### Google Maps
+- **Maps SDK for Android** (react-native-maps) for the delivery map.
+- **Routes API** (`routes.googleapis.com/directions/v2:computeRoutes`) for the route line. If the request fails, the app draws a straight line between the two points.
+- Builds made without `GOOGLE_MAPS_ANDROID_API_KEY` show a placeholder instead of the map (the Maps SDK would otherwise crash the app).
 
 ## Getting Started
 
-### Run Locally
+React Native Firebase is native code, so **Expo Go does not work**. Use a development build.
 
-Install this project with expo using git-cli.
+### Prerequisites
 
-Clone the project
+- Node.js 22.13+ or 24.3+ (24 tested) and npm
+- JDK 17 (`JAVA_HOME` pointing to it)
+- Android SDK (Android Studio), with an emulator or a USB-debugging device
+- On Windows: SDK CMake 3.31 or newer (`sdkmanager "cmake;3.31.6"`). Older CMake ships a ninja that fails on long paths; the release script picks the newest installed CMake automatically.
+- A Firebase project with an Android app whose package name is `com.himaiz.deliveroo`, Email/Password sign-in enabled and Firestore data
+
+### Files and environment variables
+
+| Name | Purpose |
+| --- | --- |
+| `google-services.json` (repo root, git-ignored) | Firebase Android config from the Firebase console. Override the location with `GOOGLE_SERVICES_JSON`. |
+| `GoogleService-Info.plist` (repo root, git-ignored) | Firebase iOS config. Only needed for iOS builds. Override with `GOOGLE_SERVICE_INFO_PLIST`. |
+| `GOOGLE_MAPS_ANDROID_API_KEY` | Android-restricted Google Maps key (Maps SDK for Android and Routes API enabled). Written into the manifest at prebuild and read at runtime. |
+| `ANDROID_CERT_SHA1` | SHA-1 of the signing certificate the Maps key is restricted to, without colons, uppercase. Sent as `X-Android-Cert` to the Routes API. |
+| `EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN` | App Check debug token for development builds. Register it in Firebase console > App Check. Without it, run `adb logcat \| grep DebugAppCheckProvider` to read a generated one. |
+| `DELIVEROO_KEYSTORE_PATH`, `DELIVEROO_KEYSTORE_PASSWORD`, `DELIVEROO_KEY_ALIAS`, `DELIVEROO_KEY_PASSWORD` | Release signing keystore (absolute path). Required for release builds only. |
+
+`.env.example` lists all of them. The android and ios folders are generated by `expo prebuild` and are not committed.
+
+The Maps key and certificate hash are embedded in the app (manifest and app config); that is normal for Maps keys, so restrict the key to the app's package name and signing certificate in Google Cloud.
+
+### Run locally
 
 ```bash
 git clone https://github.com/MaizNadeem/Deliveroo-2.0.git
-```
-
-Change directory
-
-```bash
 cd Deliveroo-2.0
-```
-
-Install dependencies
-
-```bash
 npm install
+# put google-services.json in the repo root, then:
+npx expo run:android
 ```
 
-Update the `DeliveryScreen.js` file with your own Google Maps API key:
+`npx expo run:android` runs prebuild, builds and installs the debug build, and starts Metro. After the first build, `npx expo start --dev-client` is enough for JavaScript changes. Re-run `npx expo run:android` after changing dependencies, plugins or `app.config.js`.
 
-1. Open the file located at `Deliveroo-2.0/screens/DeliveryScreen.js`.
-2. Look for the line `const apiKey = process.env.GOOGLE_MAPS_API_KEY;`.
-3. Replace `process.env.GOOGLE_MAPS_API_KEY` with your API key:
+## Versioning
 
-```javascript
-const apiKey = "YOUR_API_KEY";
-```
+The version lives only in `package.json` (`version`). `app.config.js` derives the rest:
 
-4. Replace `"YOUR_API_KEY"` with your actual Google Maps API key obtained from Google Cloud Platform (cloud.google.com).
-5. Save the file after making the changes.
+- app version (`versionName`) = `package.json` version
+- `android.versionCode` = `major * 10000 + minor * 100 + patch` (2.0.0 is 20000, 2.13.4 is 21304)
 
-Remember to handle sensitive information securely and avoid sharing API keys publicly.
+Minor and patch must stay below 100; the config throws otherwise. Never edit `versionCode` by hand.
 
-It's all! You can start the expo server now for development:
+## Releasing (Android)
+
+Releases are built locally and published to GitHub Releases with one script:
 
 ```bash
-npx expo start
+npm run release:android -- <version> [--publish] [--rebuild]
 ```
+
+Run it on `main`. `package.json` already says 2.0.0, so the first release is `npm run release:android -- 2.0.0 --rebuild`; later ones pass the next version (for example `2.0.1`).
+
+Requirements: a clean git tree, JDK 17, the signing environment variables, `google-services.json`, and (for `--publish`) an authenticated GitHub CLI (`gh auth login`).
+
+The script:
+
+1. checks the version is valid MAJOR.MINOR.PATCH and greater than `package.json`'s (`--rebuild` allows the same version if its tag does not exist yet);
+2. runs `npm version <version> --no-git-tag-version`;
+3. runs `npx expo prebuild --platform android --clean --no-install` (the local plugin `plugins/withAndroidReleaseSigning.js` adds the release signing config; the Gradle build fails with a clear message if the signing variables are missing, and never falls back to the debug keystore);
+4. runs `gradlew assembleRelease` in `android/`;
+5. copies the APK to `dist/deliveroo-v<version>.apk`, writes `dist/deliveroo-v<version>.apk.sha256` and prints path, size, versionName and versionCode;
+6. creates a local commit "Release v<version>" (`package.json` and `package-lock.json`) and an annotated tag `v<version>`.
+
+Nothing leaves your machine unless you pass `--publish`, which also runs `git push origin HEAD --follow-tags` and `gh release create v<version> ... --generate-notes`. Without it the script prints those two commands.
 
 ## Contact
 

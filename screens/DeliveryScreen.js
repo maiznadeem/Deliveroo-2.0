@@ -1,17 +1,24 @@
 import { View, Text, TouchableOpacity, BackHandler, Image } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { useNavigation } from '@react-navigation/core'
+import { useNavigation } from '@react-navigation/native'
 import { useSelector } from 'react-redux'
 import { selectRestaurant } from '../features/restaurantSlice'
 import { StatusBar } from 'expo-status-bar'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PhoneIcon, XMarkIcon } from 'react-native-heroicons/solid'
 import * as Progress from 'react-native-progress'
 import MapView, { Marker, Polyline } from 'react-native-maps'
+import { getRouteCoordinates } from '../helpers/directions'
+import { popToDashboardTab } from '../helpers/navigation'
+import Constants from 'expo-constants'
+
+// Same env var feeds the manifest key (react-native-maps plugin) and this flag (app.config.js extra).
+const hasMapsKey = Boolean(Constants.expoConfig?.extra?.googleMapsAndroidApiKey)
 
 const DeliveryScreen = () => {
 
     const navigation = useNavigation()
+    const insets = useSafeAreaInsets()
     const restaurant = useSelector(selectRestaurant)
 
     const initialRegion = {
@@ -20,11 +27,8 @@ const DeliveryScreen = () => {
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
     };
-    const markerCoordinate = {
-        latitude: restaurant.geopointObject._lat,
-        longitude: restaurant.geopointObject._long,
-    };
-    const pathCoordinates = [initialRegion, markerCoordinate];
+    // Plain { latitude, longitude } produced at the read boundary (see FeaturedRow / helpers/geo.js)
+    const markerCoordinate = restaurant.geopointObject ?? null;
     const [routeCoordinates, setRouteCoordinates] = useState([]);
 
     useEffect(() => {
@@ -32,67 +36,21 @@ const DeliveryScreen = () => {
           'hardwareBackPress',
           handleGoBack
         );
-        fetchDirections();
         return () => backHandler.remove();
     }, []);
 
-    const fetchDirections = async () => {
-        try {
-            const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-            const response = await fetch(
-              `https://maps.googleapis.com/maps/api/directions/json?origin=${initialRegion.latitude},${initialRegion.longitude}&destination=${markerCoordinate.latitude},${markerCoordinate.longitude}&key=${apiKey}`
-            );            
-            const data = await response.json();
-            const polylinePoints = data.routes[0].overview_polyline.points;
-            const decodedPoints = decodePolyline(polylinePoints);
-            setRouteCoordinates(decodedPoints);
-        } catch (error) {
-            console.error('Error fetching directions:', error);
-        }
-    };
+    useEffect(() => {
+        if (!markerCoordinate) return;
+        let cancelled = false;
+        getRouteCoordinates(initialRegion, markerCoordinate).then((coordinates) => {
+            if (!cancelled) setRouteCoordinates(coordinates);
+        });
+        return () => { cancelled = true; };
+    }, [markerCoordinate?.latitude, markerCoordinate?.longitude]);
 
     const handleGoBack = () => {
-        navigation.navigate('Dashboard');
+        popToDashboardTab(navigation);
         return true; // Return true to prevent default back button behavior
-    };
-
-    const decodePolyline = (polyline) => {
-        const points = [];
-        let index = 0;
-        const len = polyline.length;
-        let lat = 0;
-        let lng = 0;
-
-        while (index < len) {
-        let b;
-        let shift = 0;
-        let result = 0;
-
-        do {
-            b = polyline.charCodeAt(index++) - 63;
-            result |= (b & 0x1f) << shift;
-            shift += 5;
-        } while (b >= 0x20);
-
-        const dlat = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
-        lat += dlat;
-
-        shift = 0;
-        result = 0;
-
-        do {
-            b = polyline.charCodeAt(index++) - 63;
-            result |= (b & 0x1f) << shift;
-            shift += 5;
-        } while (b >= 0x20);
-
-        const dlng = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
-        lng += dlng;
-
-        points.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
-        }
-
-        return points;
     };
 
     return (
@@ -100,12 +58,12 @@ const DeliveryScreen = () => {
             <StatusBar backgroundColor="#00B8C0" barStyle="dark-content" />
             <SafeAreaView className="z-50">
                 <View className="flex-row justify-between items-center p-5">
-                    <TouchableOpacity onPress={() => navigation.navigate("Dashboard")} >
+                    <TouchableOpacity onPress={() => popToDashboardTab(navigation)} >
                         <XMarkIcon color="white" size={30} />
                     </TouchableOpacity>
                     <Text className="font-light text-white text-lg">Order Help</Text>
                 </View>
-                <View className="bg-white mx-5 my-2 rounded-md p-6 z-50 shadow-shadow-android">
+                <View className="bg-white mx-5 my-2 rounded-md p-6 z-50">
                     <View className="flex-row justify-between">
                         <View>
                             <Text className="text-lg text-gray-400">Estimated Arrival</Text>
@@ -121,6 +79,13 @@ const DeliveryScreen = () => {
                 </View>
             </SafeAreaView>
 
+            {!hasMapsKey ? (
+            // Google Maps throws (and kills the app) when no API key is in the manifest, so builds made
+            // without GOOGLE_MAPS_ANDROID_API_KEY show this placeholder instead of the map.
+            <View className="flex-1 bg-gray-100 items-center justify-center px-10">
+                <Text className="text-gray-500 text-center">The live map isn't available in this build.</Text>
+            </View>
+            ) : (
             <MapView
                 initialRegion={initialRegion}
                 style={{ flex: 1 }}
@@ -139,28 +104,32 @@ const DeliveryScreen = () => {
                 pinColor="#00B8C0"
                 >
                 </Marker>
+                {markerCoordinate && (
                 <Marker
                 coordinate={markerCoordinate}
                 title={restaurant.title}
                 description={restaurant.short_description}
                 pinColor="#00B8C0"
                 />
+                )}
             </MapView>
+            )}
 
-            <SafeAreaView className="flex-row bg-white items-center space-x-5 h-28">
-                <Image 
+            {/* Plain row padded by the bottom inset (edge-to-edge); the old fixed-height SafeAreaView hid the text. */}
+            <View className="flex-row bg-white items-center px-5 pt-5" style={{ paddingBottom: insets.bottom + 20 }}>
+                <Image
                     source={{ uri: 'https://firebasestorage.googleapis.com/v0/b/deliveroo-2-c6550.appspot.com/o/Delivery%20Guy.png?alt=media&token=3111e8f6-a485-43db-8353-4a534e643fd7' }}
-                    className="h-12 w-12 bg-gray-300 p-4 rounded-full ml-5 mb-10"
+                    className="h-12 w-12 bg-gray-300 rounded-full"
                 />
-                <View className="flex-1 mb-10">
+                <View className="flex-1 ml-5">
                     <Text className="text-lg">David Kushner</Text>
                     <Text className="text-gray-400">Your Rider</Text>
                 </View>
-                <TouchableOpacity className="flex-row items-center mb-10">
+                <TouchableOpacity className="flex-row items-center">
                     <PhoneIcon size={25} color='#00B8C0'/>
-                    <Text className="text-[#00B8C0] text-lg mr-5 ml-1 font-bold">Call</Text>
+                    <Text className="text-[#00B8C0] text-lg ml-1 font-bold">Call</Text>
                 </TouchableOpacity>
-            </SafeAreaView>
+            </View>
 
         </View>
     )

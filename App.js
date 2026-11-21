@@ -1,3 +1,5 @@
+import './global.css';
+import './firebase/appCheck'; // App Check must be set up before any Firestore/Auth call
 import { theme } from './core/theme';
 import { store } from './store';
 import { View } from 'react-native';
@@ -31,7 +33,6 @@ import {
 } from './screens';
 
 import SideHeader from './core/SideHeader';
-import AddFirestoreData from './firebase/AddFirestoreData';
 
 // Import necessary components and screens
 
@@ -53,8 +54,8 @@ function CustomDrawerContent({ navigation, state }) {
             <DrawerItem
                 label="Dashboard"
                 icon={({ color, size }) => <HomeIcon name="home" size={size} color={color} />}
-                onPress={() => navigation.navigate('Dashboard')}
-                focused={state.routeNames[state.index] === 'Dashboard'} // Check if the item is active
+                onPress={() => navigation.navigate('DashboardTab', { screen: 'Dashboard' })}
+                focused={state.routeNames[state.index] === 'DashboardTab'} // Check if the item is active
                 activeTintColor="#00B8C0" // Active screen color
                 inactiveTintColor="#999999" // Inactive screens color
             />
@@ -95,7 +96,6 @@ export default function App() {
                             <Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen} />
                             <Stack.Screen name="PreparingOrderScreen" component={PreparingOrderScreen} />
                             <Stack.Screen name="DeliveryScreen" component={DeliveryScreen} />
-                            <Stack.Screen name="AddFirestoreData" component={AddFirestoreData} />
                             <Stack.Screen name="DashboardDrawer" component={DashboardDrawer} />
                         </Stack.Navigator>
                     </NavigationContainer>

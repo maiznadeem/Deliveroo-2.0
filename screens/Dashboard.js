@@ -20,12 +20,28 @@ const Dashboard = () => {
     const navigation = useNavigation()
 
     // Firestore Data Fetching
-    const restaurants = useFirestoreData('Restaurant')
-    const categories = useFirestoreData('Categories')
-    const featured = useFirestoreData('Featured')
+    const { loading: restaurantsLoading, error: restaurantsError } = useFirestoreData('Restaurant')
+    const { data: categories, loading: categoriesLoading, error: categoriesError } = useFirestoreData('Categories')
+    const { data: featured, loading: featuredLoading, error: featuredError } = useFirestoreData('Featured')
+
+    const error = restaurantsError || categoriesError || featuredError
+
+    // Reads failed (e.g. permission-denied when not signed in): say so instead of spinning forever
+    if (error) {
+        return (
+          <SafeAreaView style={{flex: 1}} className="items-center justify-center px-8">
+            <Text className="text-lg font-bold mb-2 text-center">Couldn't load restaurants</Text>
+            <Text className="text-gray-500 text-center">
+              {String(error.code).includes('permission-denied')
+                ? 'You need to be signed in to view restaurants.'
+                : 'Please check your connection and try again later.'}
+            </Text>
+          </SafeAreaView>
+        );
+    }
 
     // If not loaded, return loading indicator
-    if ( restaurants.length === 0 || categories.length === 0 || featured.length === 0 ) {
+    if ( restaurantsLoading || categoriesLoading || featuredLoading ) {
         return (
           <SafeAreaView style={{flex: 1}}>
             <ActivityIndicator style={{flex: 1, justifyContent: 'center', alignItems: 'center'}} size="large" color="#00B8C0" />

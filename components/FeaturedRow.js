@@ -1,7 +1,9 @@
 import { View, Text, ScrollView, FlatList } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { ArrowRightIcon } from 'react-native-heroicons/outline'
+import { getDoc } from '@react-native-firebase/firestore'
 import RestaurantCard from './RestaurantCard'
+import { toLatLng } from '../helpers/geo'
 
 const FeaturedRow = ({ id, title, description, data }) => {
   const [restaurants, setRestaurants] = useState([]);
@@ -10,9 +12,15 @@ const FeaturedRow = ({ id, title, description, data }) => {
     // Fetch the restaurant data using the references
     const fetchRestaurants = async () => {
       const fetchedRestaurants = await Promise.all(data.map(async (ref) => {
-        const doc = await ref.get();
-        if (doc.exists) {
-          return doc.data();
+        try {
+          const doc = await getDoc(ref);
+          if (doc.exists()) {
+            const restaurant = doc.data();
+            // GeoPoint -> plain { latitude, longitude } at the read boundary (serializable for Redux)
+            return { ...restaurant, location: toLatLng(restaurant.location) };
+          }
+        } catch (error) {
+          console.log('Error getting restaurant:', error);
         }
       }));
       setRestaurants(fetchedRestaurants.filter(Boolean));

@@ -4,7 +4,8 @@ import { StatusBar } from 'expo-status-bar'
 import { useNavigation } from '@react-navigation/native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { XCircleIcon } from 'react-native-heroicons/solid'
-import Currency from 'react-currency-formatter'
+import { formatCurrency } from '../helpers/formatCurrency'
+import { navigateToDashboardTab } from '../helpers/navigation'
 import { useDispatch, useSelector } from 'react-redux'
 import { selectRestaurant } from '../features/restaurantSlice'
 import { removeFromBasket, selectBasketItems, addToBasket, selectBasketTotal } from '../features/basketSlice'
@@ -37,7 +38,7 @@ const BasketScreen = () => {
                 <Text className="text-lg text-gray-400 p-4">Looks empty in here...</Text>
                 <TouchableOpacity 
                         className="rounded-lg bg-[#00B8C0] px-5 py-2"
-                        onPress={() => navigation.navigate("Dashboard")}
+                        onPress={() => navigateToDashboardTab(navigation)}
                     >
                         <Text className="text-center text-white text-md font-bold">Order Now</Text>
                 </TouchableOpacity>
@@ -79,7 +80,7 @@ const BasketScreen = () => {
                             />
                             <Text className="flex-1">{items[0]?.name}</Text>
                             <Text className="text-gray-600">
-                                <Currency quantity={items[0]?.price} currency='USD'/>
+                                {formatCurrency(items[0]?.price)}
                             </Text>
                             <TouchableOpacity
                                 className="py-2 pl-2"
@@ -100,19 +101,19 @@ const BasketScreen = () => {
                     <View className="flex-row justify-between">
                         <Text className="text-gray-400">Subtotal</Text>
                         <Text className="text-gray-400">
-                            <Currency quantity={basketTotal} currency='USD'/>
+                            {formatCurrency(basketTotal)}
                         </Text>
                     </View>
                     <View className="flex-row justify-between">
                         <Text className="text-gray-400">Delivery Fee</Text>
                         <Text className="text-gray-400">
-                            <Currency quantity={5.99} currency='USD'/>
+                            {formatCurrency(5.99)}
                         </Text>
                     </View>
                     <View className="flex-row justify-between">
                         <Text>Order Total</Text>
                         <Text className="font-extrabold">
-                            <Currency quantity={basketTotal + 5.99} currency='USD'/>
+                            {formatCurrency(basketTotal + 5.99)}
                         </Text>
                     </View>
                     <TouchableOpacity 

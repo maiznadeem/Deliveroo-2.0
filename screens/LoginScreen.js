@@ -10,7 +10,7 @@ import BackButton from '../components/AuthComponents/BackButton'
 import { theme } from '../core/theme'
 import { emailValidator } from '../helpers/emailValidator'
 import { passwordValidator } from '../helpers/passwordValidator'
-import { auth } from '../firebase/config'
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from '@react-native-firebase/auth'
 
 export default function LoginScreen({ navigation }) {
 
@@ -18,7 +18,7 @@ export default function LoginScreen({ navigation }) {
     const [password, setPassword] = useState({ value: '', error: '' })
 
     useEffect(()=>{
-        const unsubscribe = auth.onAuthStateChanged((user => {
+        const unsubscribe = onAuthStateChanged(getAuth(), (user => {
             if (user) {
                 navigation.reset({
                     index: 0,
@@ -40,8 +40,7 @@ export default function LoginScreen({ navigation }) {
         return
         }
 
-        auth
-            .signInWithEmailAndPassword(email.value, password.value)
+        signInWithEmailAndPassword(getAuth(), email.value, password.value)
             .then(userCredentials => {
                 const user = userCredentials.user
             })

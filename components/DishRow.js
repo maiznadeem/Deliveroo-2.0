@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, Image } from 'react-native'
 import React, { useState } from 'react'
-import Currency from 'react-currency-formatter'
+import { formatCurrency } from '../helpers/formatCurrency'
 import { MinusCircleIcon, PlusCircleIcon } from 'react-native-heroicons/solid'
 import { useDispatch, useSelector } from 'react-redux'
 import { addToBasket, removeFromBasket, selectBasketItemsWithID } from '../features/basketSlice'
@@ -33,7 +33,7 @@ const DishRow = ({id, name, description, price, image, onAddToCart}) => {
                     <Text className="text-lg mb-1 font-medium">{name}</Text>
                     <Text className="text-gray-400 ">{description}</Text>
                     <Text className="text-gray-400 mt-2">
-                        <Currency quantity={price} currency='USD' />
+                        {formatCurrency(price)}
                     </Text>
                 </View>
                 <View>
