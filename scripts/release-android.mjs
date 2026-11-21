@@ -173,7 +173,9 @@ if (isWindows) {
 }
 
 console.log('\n== gradlew assembleRelease ==');
-if (isWindows) runShell('gradlew.bat', ['assembleRelease'], { cwd: androidDir });
+// Full path: with NoDefaultCurrentDirectoryInExePath set (hardened shells), cmd.exe won't find a bare
+// "gradlew.bat" in the working directory.
+if (isWindows) runShell(`"${join(androidDir, 'gradlew.bat')}"`, ['assembleRelease'], { cwd: androidDir });
 else run('./gradlew', ['assembleRelease'], { cwd: androidDir });
 
 const builtApk = join(androidDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk');
