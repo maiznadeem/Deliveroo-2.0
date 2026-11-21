@@ -1,5 +1,5 @@
 import { View, TouchableOpacity, StyleSheet } from 'react-native'
-import React from 'react'
+import React, { memo } from 'react'
 import { LinearGradient } from 'expo-linear-gradient'
 import StorageImage from './StorageImage'
 import Text from './ui/Text'
@@ -23,4 +23,4 @@ const CategoryCard = ({ imgUrl, title }) => {
   )
 }
 
-export default CategoryCard
+export default memo(CategoryCard)

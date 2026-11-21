@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
-import Background from '../components/AuthComponents/Background'
-import Logo from '../components/AuthComponents/Logo'
-import Header from '../components/AuthComponents/Header'
+import { Mail } from 'lucide-react-native'
+import { getAuth, sendPasswordResetEmail } from '@react-native-firebase/auth'
+import AuthLayout from '../components/AuthComponents/AuthLayout'
 import TextInput from '../components/AuthComponents/TextInput'
 import Button from '../components/AuthComponents/Button'
 import { emailValidator } from '../helpers/emailValidator'
 
 export default function ResetPasswordScreen({ navigation }) {
   const [email, setEmail] = useState({ value: '', error: '' })
+  const [loading, setLoading] = useState(false)
 
   const sendResetPasswordEmail = () => {
     const emailError = emailValidator(email.value)
@@ -15,33 +16,42 @@ export default function ResetPasswordScreen({ navigation }) {
       setEmail({ ...email, error: emailError })
       return
     }
-    navigation.popTo('LoginScreen') // React Navigation 7: navigate() would push a second LoginScreen
+    setLoading(true)
+    sendPasswordResetEmail(getAuth(), email.value.trim())
+      .then(() => {
+        alert('If an account exists for this email, a reset link is on its way.')
+        navigation.popTo('LoginScreen') // React Navigation 7: navigate() would push a second LoginScreen
+      })
+      .catch((error) => {
+        setLoading(false)
+        alert(error.message)
+      })
   }
 
   return (
-    <Background onBack={navigation.goBack}>
-      <Logo size={128} />
-      <Header>Restore Password</Header>
+    <AuthLayout
+      onBack={navigation.goBack}
+      title="Reset your password"
+      subtitle="Enter your email and we'll send you a link to choose a new one."
+    >
       <TextInput
-        label="E-mail address"
+        label="Email"
+        icon={Mail}
+        placeholder="you@example.com"
         returnKeyType="done"
         value={email.value}
         onChangeText={(text) => setEmail({ value: text, error: '' })}
+        onSubmitEditing={sendResetPasswordEmail}
         error={!!email.error}
         errorText={email.error}
         autoCapitalize="none"
         autoComplete="email"
         textContentType="emailAddress"
         keyboardType="email-address"
-        description="You will receive email with password reset link."
       />
-      <Button
-        mode="contained"
-        onPress={sendResetPasswordEmail}
-        style={{ marginTop: 8 }}
-      >
-        Send Instructions
+      <Button mode="contained" onPress={sendResetPasswordEmail} loading={loading} className="mt-2">
+        Send reset link
       </Button>
-    </Background>
+    </AuthLayout>
   )
 }

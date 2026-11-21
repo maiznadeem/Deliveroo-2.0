@@ -1,5 +1,5 @@
 import { ScrollView, View, TouchableOpacity, ActivityIndicator } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -18,7 +18,6 @@ import { useAppTheme } from '../hooks/useAppTheme';
 
 const RestaurantScreen = () => {
 
-    const [dishes, setDishes] = useState(null)
     const [showConfirmation, setShowConfirmation] = useState(false);
 
     const basketItems = useSelector(selectBasketItems)
@@ -41,11 +40,14 @@ const RestaurantScreen = () => {
         geopointObject,
     } = route.params;
 
-    useEffect(() => {
-        setDishes(dishesArray);
-    }, []);
+    const dishes = dishesArray
 
-    const handleAddToCart = () => {
+    // Stable across basket changes (the latest basket is read from a ref), so memoised DishRows don't re-render.
+    const basketItemsRef = useRef(basketItems)
+    basketItemsRef.current = basketItems
+
+    const handleAddToCart = useCallback(() => {
+        const basketItems = basketItemsRef.current
         if (basketItems.length === 0) {
           // Basket is empty, so set the restaurant
         dispatch (
@@ -76,7 +78,7 @@ const RestaurantScreen = () => {
                 return true;
             }
         }
-    };
+    }, [dispatch, id, imgUrl, title, rating, genre, address, short_description, dishesArray, geopointObject]);
 
     const handleConfirm = () => {
         // Handle the confirmation logic here

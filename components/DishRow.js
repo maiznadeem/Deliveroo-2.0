@@ -1,18 +1,18 @@
 import { View, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import React, { memo, useState } from 'react'
 import { CircleMinus, CirclePlus } from 'lucide-react-native'
 import { useDispatch, useSelector } from 'react-redux'
 import StorageImage from './StorageImage'
 import Text from './ui/Text'
 import { formatCurrency } from '../helpers/formatCurrency'
 import { useAppTheme } from '../hooks/useAppTheme'
-import { addToBasket, removeFromBasket, selectBasketItemsWithID } from '../features/basketSlice'
+import { addToBasket, removeFromBasket, selectBasketCountWithID } from '../features/basketSlice'
 
 
 const DishRow = ({id, name, description, price, image, onAddToCart}) => {
 
     const [isPressed, setIsPressed] = useState(false)
-    const items = useSelector(state => selectBasketItemsWithID(state, id))
+    const count = useSelector(state => selectBasketCountWithID(state, id))
     const dispatch = useDispatch()
     const { colors } = useAppTheme()
 
@@ -22,7 +22,7 @@ const DishRow = ({id, name, description, price, image, onAddToCart}) => {
     }
 
     const removeItemFromBasket = () => {
-        if (items.length <= 0) return
+        if (count <= 0) return
         dispatch(removeFromBasket({ id }))
     }
 
@@ -54,11 +54,11 @@ const DishRow = ({id, name, description, price, image, onAddToCart}) => {
                         accessibilityLabel={`Remove one ${name}`}
                         className="h-11 w-11 items-center justify-center"
                         onPress={removeItemFromBasket}
-                        disabled={!items.length}
+                        disabled={count === 0}
                     >
-                        <CircleMinus size={32} strokeWidth={2} color={items.length > 0 ? colors.brand : colors.outline} />
+                        <CircleMinus size={32} strokeWidth={2} color={count > 0 ? colors.brand : colors.outline} />
                     </TouchableOpacity>
-                    <Text className="min-w-8 text-center text-base font-bold">{items.length}</Text>
+                    <Text className="min-w-8 text-center text-base font-bold">{count}</Text>
                     <TouchableOpacity
                         accessibilityRole="button"
                         accessibilityLabel={`Add one ${name}`}
@@ -74,4 +74,4 @@ const DishRow = ({id, name, description, price, image, onAddToCart}) => {
 
 }
 
-export default DishRow
+export default memo(DishRow)

@@ -95,6 +95,25 @@ const tag = `v${version}`;
 
 // ---- 2. Repository and environment checks ----------------------------------------------------------
 
+// A QA build (App Check debug provider, see firebase/appCheck.js) must never be published, and EXPO_PUBLIC_*
+// values are inlined into the JS bundle: refuse if the QA switch or the debug token is set, in the environment
+// or in a .env file that Expo would load.
+const QA_VARIABLES = ['DELIVEROO_QA_APPCHECK_DEBUG', 'EXPO_PUBLIC_DELIVEROO_QA_APPCHECK_DEBUG', 'EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN'];
+const qaFound = QA_VARIABLES.filter((name) => process.env[name]);
+for (const file of ['.env', '.env.local', '.env.production', '.env.production.local']) {
+  const path = join(root, file);
+  if (!existsSync(path)) continue;
+  const text = readFileSync(path, 'utf8');
+  for (const name of QA_VARIABLES) if (new RegExp(`^\\s*(export\\s+)?${name}\\s*=`, 'm').test(text)) qaFound.push(`${name} (in ${file})`);
+}
+if (qaFound.length > 0) {
+  fail(`this is a QA setup, not a release: unset ${qaFound.join(', ')}. QA builds use the App Check debug provider and must never be published.`);
+}
+const abiOverride = process.env.DELIVEROO_ANDROID_ABIS;
+if (abiOverride && abiOverride !== 'all' && !abiOverride.split(',').map((abi) => abi.trim()).includes('arm64-v8a')) {
+  fail(`DELIVEROO_ANDROID_ABIS="${abiOverride}" has no arm64-v8a: a release must run on real phones. Unset it (default: arm64-v8a,armeabi-v7a).`);
+}
+
 if (git('status', '--porcelain') !== '') {
   fail('the git working tree is not clean. Commit or stash your changes (untracked files count) and try again.');
 }

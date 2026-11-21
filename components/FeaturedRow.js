@@ -1,36 +1,31 @@
 import { View, FlatList } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { memo } from 'react'
 import { ArrowRight } from 'lucide-react-native'
-import { getDoc } from '@react-native-firebase/firestore'
 import RestaurantCard from './RestaurantCard'
 import Text from './ui/Text'
-import { toLatLng } from '../helpers/geo'
 import { useAppTheme } from '../hooks/useAppTheme'
+import { perfMark } from '../helpers/perf'
 
-const FeaturedRow = ({ id, title, description, data }) => {
-  const [restaurants, setRestaurants] = useState([]);
+const listStyle = { paddingHorizontal: 16, paddingVertical: 12, gap: 12 }
+const keyExtractor = (item) => item.id.toString()
+const renderItem = ({ item }) => (
+  <RestaurantCard
+    id={item.id}
+    imgUrl={item.image}
+    title={item.name}
+    rating={item.rating}
+    genre={item.genre}
+    address={item.address}
+    short_description={item['short description']}
+    dishes={item.dish}
+    geopoint={item.location}
+  />
+)
+
+// One horizontal row of restaurants. The restaurants are already resolved (see helpers/catalogue.js).
+const FeaturedRow = ({ title, description, restaurants }) => {
   const { colors } = useAppTheme()
-
-  useEffect(() => {
-    // Fetch the restaurant data using the references
-    const fetchRestaurants = async () => {
-      const fetchedRestaurants = await Promise.all(data.map(async (ref) => {
-        try {
-          const doc = await getDoc(ref);
-          if (doc.exists()) {
-            const restaurant = doc.data();
-            // GeoPoint -> plain { latitude, longitude } at the read boundary (serializable for Redux)
-            return { ...restaurant, location: toLatLng(restaurant.location) };
-          }
-        } catch (error) {
-          console.log('Error getting restaurant:', error);
-        }
-      }));
-      setRestaurants(fetchedRestaurants.filter(Boolean));
-    };
-
-    fetchRestaurants();
-  }, [data]);
+  perfMark('featured-row-ready')
 
   return (
     <View className="mt-4">
@@ -41,26 +36,17 @@ const FeaturedRow = ({ id, title, description, data }) => {
       <Text className="mt-0.5 px-4 text-xs text-muted dark:text-muted-dark" numberOfLines={2}>{description}</Text>
       <FlatList
         horizontal
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}
+        contentContainerStyle={listStyle}
         showsHorizontalScrollIndicator={false}
         data={restaurants}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <RestaurantCard
-            id={item.id}
-            imgUrl={item.image}
-            title={item.name}
-            rating={item.rating}
-            genre={item.genre}
-            address={item.address}
-            short_description={item['short description']}
-            dishes={item.dish}
-            geopoint={item.location}
-          />
-        )}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        initialNumToRender={3}
+        maxToRenderPerBatch={3}
+        windowSize={5}
       />
     </View>
   )
 }
 
-export default FeaturedRow
+export default memo(FeaturedRow)

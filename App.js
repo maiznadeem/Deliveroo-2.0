@@ -1,20 +1,19 @@
 import './global.css';
+import { hideSplash } from './helpers/splash'; // first: keeps the native splash up
 import './firebase/appCheck'; // App Check must be set up before any Firestore/Auth call
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { store } from './store';
 import { Provider as ReduxProvider } from 'react-redux';
-import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { getAuth } from '@react-native-firebase/auth';
-import { House, ShoppingCart, CircleUser, Store, Eye, EyeOff, X, Check, ChevronDown, ArrowLeft, Search } from 'lucide-react-native';
+import { House, ShoppingCart, CircleUser, Store } from 'lucide-react-native';
 
 import {
     StartScreen,
@@ -32,31 +31,28 @@ import {
 
 import Logo from './components/AuthComponents/Logo';
 import Text from './components/ui/Text';
-import { createNavigationTheme, createPaperTheme, fontFamilies } from './core/theme';
+import { createNavigationTheme, fontFamilies } from './core/theme';
 import { restoreColorScheme, useAppTheme } from './hooks/useAppTheme';
+import { perfMark } from './helpers/perf';
+import { preloadCatalogue } from './helpers/catalogue';
+import { prewarmStorageHeaders } from './hooks/useStorageAuthHeaders';
 
-// Keep the native splash up until the saved color scheme is applied, so there is no light -> dark flash.
-SplashScreen.preventAutoHideAsync().catch(() => {});
+perfMark('app-module-evaluated');
+
+// Everything below starts at import time and runs in parallel: the saved color scheme (the splash covers the
+// wait), and, for a user who is already signed in, the tokens for Storage images and the catalogue reads.
+const schemeRestored = restoreColorScheme();
+if (getAuth().currentUser) {
+    prewarmStorageHeaders();
+    preloadCatalogue();
+}
+
+// Safety net: never leave the app behind the splash if the first screen never reports ready.
+const SPLASH_TIMEOUT_MS = 5000;
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
-
-// lucide replaces vector-icons: Paper looks icons up through this (TextInput.Icon, Button icon, ...).
-const paperIcons = {
-    eye: Eye,
-    'eye-off': EyeOff,
-    close: X,
-    check: Check,
-    'chevron-down': ChevronDown,
-    'menu-down': ChevronDown,
-    'arrow-left': ArrowLeft,
-    magnify: Search,
-};
-function PaperIcon({ name, color, size }) {
-    const Icon = paperIcons[name];
-    return Icon ? <Icon color={color} size={size} strokeWidth={2} /> : null;
-}
 
 function CustomDrawerContent({ navigation, state }) {
     const { colors } = useAppTheme();
@@ -107,14 +103,14 @@ function CustomDrawerContent({ navigation, state }) {
 export default function App() {
     const { isDark, colors } = useAppTheme();
     const [ready, setReady] = useState(false);
+    // A saved session (including a demo session) opens the app directly, without flashing the Start screen.
+    const [initialRoute] = useState(() => (getAuth().currentUser ? 'DashboardDrawer' : 'StartScreen'));
 
     useEffect(() => {
-        restoreColorScheme().finally(() => setReady(true));
+        schemeRestored.finally(() => setReady(true));
+        const timer = setTimeout(hideSplash, SPLASH_TIMEOUT_MS);
+        return () => clearTimeout(timer);
     }, []);
-
-    useEffect(() => {
-        if (ready) SplashScreen.hideAsync().catch(() => {});
-    }, [ready]);
 
     // Root view background (behind the keyboard, during transitions) follows the theme.
     useEffect(() => {
@@ -122,31 +118,28 @@ export default function App() {
     }, [colors.background]);
 
     const navigationTheme = useMemo(() => createNavigationTheme(isDark), [isDark]);
-    const paperTheme = useMemo(() => createPaperTheme(isDark), [isDark]);
 
     if (!ready) return null;
 
     return (
         <SafeAreaProvider>
             <ReduxProvider store={store}>
-                <PaperProvider theme={paperTheme} settings={{ icon: PaperIcon }}>
-                    <StatusBar style={isDark ? 'light' : 'dark'} />
-                    <NavigationContainer theme={navigationTheme}>
-                        <Stack.Navigator
-                            initialRouteName="StartScreen"
-                            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
-                        >
-                            <Stack.Screen name="StartScreen" component={StartScreen} />
-                            <Stack.Screen name="LoginScreen" component={LoginScreen} />
-                            <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
-                            <Stack.Screen name="RestaurantScreen" component={RestaurantScreen} />
-                            <Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen} />
-                            <Stack.Screen name="PreparingOrderScreen" component={PreparingOrderScreen} />
-                            <Stack.Screen name="DeliveryScreen" component={DeliveryScreen} />
-                            <Stack.Screen name="DashboardDrawer" component={DashboardDrawer} />
-                        </Stack.Navigator>
-                    </NavigationContainer>
-                </PaperProvider>
+                <StatusBar style={isDark ? 'light' : 'dark'} />
+                <NavigationContainer theme={navigationTheme}>
+                    <Stack.Navigator
+                        initialRouteName={initialRoute}
+                        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
+                    >
+                        <Stack.Screen name="StartScreen" component={StartScreen} />
+                        <Stack.Screen name="LoginScreen" component={LoginScreen} />
+                        <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
+                        <Stack.Screen name="RestaurantScreen" component={RestaurantScreen} />
+                        <Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen} />
+                        <Stack.Screen name="PreparingOrderScreen" component={PreparingOrderScreen} />
+                        <Stack.Screen name="DeliveryScreen" component={DeliveryScreen} />
+                        <Stack.Screen name="DashboardDrawer" component={DashboardDrawer} />
+                    </Stack.Navigator>
+                </NavigationContainer>
             </ReduxProvider>
         </SafeAreaProvider>
     );

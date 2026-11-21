@@ -24,11 +24,24 @@ const SIGNING_CONFIG_BLOCK = `
         }`;
 
 const RELEASE_GUARD = `
+${MARKER} the release JS bundle must always be rebuilt: Gradle does not see EXPO_PUBLIC_* environment changes, so a
+// bundle made with the QA switch (App Check debug provider + debug token, see firebase/appCheck.js) could otherwise be
+// reused by the next release build.
+tasks.configureEach { task ->
+    if (task.name == 'createBundleReleaseJsAndAssets') task.outputs.upToDateWhen { false }
+}
+
 ${MARKER} refuse to build a release without the signing environment variables.
 gradle.taskGraph.whenReady { graph ->
     def releaseTaskNames = ['assembleRelease', 'bundleRelease', 'packageRelease', 'validateSigningRelease']
     def building = graph.allTasks.any { it.project == project && releaseTaskNames.contains(it.name) }
     if (!building) return
+
+    // A QA build (debug App Check provider) needs -PdeliverooQa=true; a release never passes it.
+    def qaVars = ['DELIVEROO_QA_APPCHECK_DEBUG', 'EXPO_PUBLIC_DELIVEROO_QA_APPCHECK_DEBUG', 'EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN'].findAll { System.getenv(it) }
+    if (!qaVars.isEmpty() && !project.hasProperty('deliverooQa')) {
+        throw new GradleException('QA App Check variables are set (' + qaVars.join(', ') + '): refusing to build a release. Unset them, or pass -PdeliverooQa=true for a QA build that must never be published.')
+    }
 
     def required = ['DELIVEROO_KEYSTORE_PATH', 'DELIVEROO_KEYSTORE_PASSWORD', 'DELIVEROO_KEY_ALIAS', 'DELIVEROO_KEY_PASSWORD']
     def missing = required.findAll { !System.getenv(it) }

@@ -19,17 +19,20 @@ function publish(next) {
 }
 
 async function loadHeaders(user) {
-  const idToken = await getIdToken(user);
+  // Both tokens are independent network/cache lookups: fetch them together. App Check may be unavailable
+  // (e.g. a device without Play Integrity): then only the ID token is sent and the request is rejected by
+  // the backend if enforcement is on.
+  const [idToken, appCheckToken] = await Promise.all([
+    getIdToken(user),
+    appCheckInstance
+      ? getToken(appCheckInstance).then(({ token }) => token).catch((error) => {
+          console.log('[StorageImage] App Check token unavailable, sending only the ID token:', error?.message ?? error);
+          return null;
+        })
+      : null,
+  ]);
   const headers = { Authorization: `Firebase ${idToken}` };
-  // Enforcement is off for now and App Check is unavailable on some emulators: never block images on it.
-  if (appCheckInstance) {
-    try {
-      const { token } = await getToken(appCheckInstance);
-      if (token) headers['X-Firebase-AppCheck'] = token;
-    } catch (error) {
-      console.log('[StorageImage] App Check token unavailable, sending only the ID token:', error?.message ?? error);
-    }
-  }
+  if (appCheckToken) headers['X-Firebase-AppCheck'] = appCheckToken;
   return headers;
 }
 
@@ -58,6 +61,13 @@ function ensureAuthListener() {
     publish({ status: 'loading', headers: null, loadedAt: 0 });
     refresh();
   });
+}
+
+// Starts fetching the headers right away (called once at startup), so they are usually ready by the time the first
+// image is rendered.
+export function prewarmStorageHeaders() {
+  ensureAuthListener();
+  refresh();
 }
 
 // Called by StorageImage when a load fails (e.g. an ID token that expired while the app sat idle):

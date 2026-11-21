@@ -1,12 +1,12 @@
 import { View, TouchableOpacity } from 'react-native'
-import React from 'react'
+import React, { memo } from 'react'
 import { Star, MapPin } from 'lucide-react-native'
 import { useNavigation } from '@react-navigation/native'
-import { getDoc } from '@react-native-firebase/firestore'
 import StorageImage from './StorageImage'
 import Text from './ui/Text'
 import { cardShadow } from '../core/theme'
 import { useAppTheme } from '../hooks/useAppTheme'
+import { loadDishes } from '../helpers/catalogue'
 
 const RestaurantCard = ({
     id,
@@ -24,39 +24,21 @@ const RestaurantCard = ({
     const { isDark, colors } = useAppTheme()
     const geopointObject = geopoint // already a plain { latitude, longitude } (see FeaturedRow)
 
-    const fetchDishes = () => {
-
-        const dishPromises = (dishes ?? []).map((dishRef) => {
-            return getDoc(dishRef)
-                .then((dishSnapshot) => {
-                    if (dishSnapshot.exists()) {
-                        return dishSnapshot.data();
-                    } else {
-                        console.log('Document does not exist');
-                        return null;
-                    }
-                })
-                .catch((error) => {
-                    console.log('Error getting document:', error);
-                    return null;
-                });
-        });
-
-        Promise.all(dishPromises)
-            .then((dishDataArray) => {
-                // Navigate to RestaurantScreen with the fetched dishes
-                navigation.navigate("RestaurantScreen", {
-                    id,
-                    imgUrl,
-                    title,
-                    rating,
-                    genre,
-                    address,
-                    short_description,
-                    dishesArray: dishDataArray,
-                    geopointObject,
-                });
+    // Dish documents are memoised and prefetched (helpers/catalogue.js), so this usually resolves immediately.
+    const openRestaurant = () => {
+        loadDishes(dishes).then((dishDataArray) => {
+            navigation.navigate("RestaurantScreen", {
+                id,
+                imgUrl,
+                title,
+                rating,
+                genre,
+                address,
+                short_description,
+                dishesArray: dishDataArray.filter(Boolean),
+                geopointObject,
             });
+        });
     }
 
     return (
@@ -66,7 +48,7 @@ const RestaurantCard = ({
             activeOpacity={0.85}
             className="w-64 rounded-2xl border border-transparent bg-surface dark:border-border-dark dark:bg-surface-dark"
             style={isDark ? undefined : cardShadow}
-            onPress={fetchDishes}
+            onPress={openRestaurant}
         >
             <View className="overflow-hidden rounded-2xl">
                 <StorageImage source={{ uri: imgUrl }} className="h-36 w-full" resizeMode="cover" />
@@ -88,4 +70,4 @@ const RestaurantCard = ({
     )
 }
 
-export default RestaurantCard
+export default memo(RestaurantCard)

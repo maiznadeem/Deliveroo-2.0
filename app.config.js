@@ -19,6 +19,14 @@ function androidVersionCode(semver) {
   return major * 10000 + minor * 100 + patch;
 }
 
+// Release builds: arm64-v8a + armeabi-v7a only. DELIVEROO_ANDROID_ABIS=all keeps the React Native default (all four).
+function androidBuildArchs() {
+  const override = process.env.DELIVEROO_ANDROID_ABIS;
+  if (override === 'all') return ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'];
+  if (override) return override.split(',').map((abi) => abi.trim()).filter(Boolean);
+  return ['arm64-v8a', 'armeabi-v7a'];
+}
+
 module.exports = {
   expo: {
     name: 'Deliveroo',
@@ -58,6 +66,10 @@ module.exports = {
           // React Native Firebase 27 pulls Firebase BoM 35 (firebase-auth 25), which ships Kotlin 2.4
           // metadata; Expo SDK 58's default Kotlin 2.2 can't read it. See the RNFB v27 migration guide.
           android: {
+            // Release APKs ship only the ABIs real phones use (arm64-v8a, armeabi-v7a): x86/x86_64 would add ~50 MB.
+            // Set DELIVEROO_ANDROID_ABIS (comma-separated, or "all") at prebuild time to override. Emulator builds
+            // pass -PreactNativeArchitectures themselves (expo run:android does, so does the QA build script).
+            buildArchs: androidBuildArchs(),
             kotlinVersion: '2.4.0',
             // react-native-maps pulls WorkManager 2.9 (Room 2.5), which creates WorkDatabase_Impl by
             // reflection. AGP 9's full-mode R8 strips its no-arg constructor and the app crashes on launch.
@@ -70,7 +82,8 @@ module.exports = {
         {
           // Transparent, padded logo (the Android 12+ splash icon is masked to a circle).
           image: './assets/splash-icon.png',
-          imageWidth: 240,
+          // Android 12+ masks the icon to a circle two thirds of the icon area, and the logo is padded to fit it.
+          imageWidth: 288,
           backgroundColor: '#ffffff',
           dark: {
             image: './assets/splash-icon.png',

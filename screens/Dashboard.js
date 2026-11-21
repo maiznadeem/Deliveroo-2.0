@@ -1,5 +1,5 @@
 import { View, TextInput, ScrollView, ActivityIndicator } from 'react-native';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronDown, Search, SlidersHorizontal, Menu, Sun, Moon } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -10,21 +10,35 @@ import StorageImage from '../components/StorageImage';
 import Text from '../components/ui/Text';
 import IconButton from '../components/ui/IconButton';
 
-import useFirestoreData from '../hooks/UseFirestoreData';
+import { prefetchDishes, useCatalogue } from '../helpers/catalogue';
+import { hideSplash } from '../helpers/splash';
 import { useAppTheme } from '../hooks/useAppTheme';
+import { perfMark } from '../helpers/perf';
 import { fontFamilies } from '../core/theme';
+
+const FIRST_IMAGE_GRACE_MS = 450
 
 const Dashboard = () => {
 
     const navigation = useNavigation()
     const { isDark, colors, toggleScheme } = useAppTheme()
 
-    // Firestore Data Fetching
-    const { loading: restaurantsLoading, error: restaurantsError } = useFirestoreData('Restaurant')
-    const { data: categories, loading: categoriesLoading, error: categoriesError } = useFirestoreData('Categories')
-    const { data: featured, loading: featuredLoading, error: featuredError } = useFirestoreData('Featured')
+    // Categories, featured rows and the restaurants they reference are read once and shared (helpers/catalogue.js).
+    const { categories, sections, loading, error } = useCatalogue()
+    const ready = !loading || !!error
 
-    const error = restaurantsError || categoriesError || featuredError
+    // The native splash stays up until there is something to show: the content is ready and the first image has
+    // had a moment to come from the disk cache (StorageImage hides the splash as soon as one has loaded).
+    useEffect(() => {
+        if (!ready) return undefined
+        const timer = setTimeout(hideSplash, error ? 0 : FIRST_IMAGE_GRACE_MS)
+        return () => clearTimeout(timer)
+    }, [ready, error])
+
+    // Once the dashboard is on screen, fill the dish cache so opening a restaurant needs no reads.
+    useEffect(() => {
+        if (!loading && !error) prefetchDishes()
+    }, [loading, error])
 
     // Reads failed (e.g. permission-denied when not signed in): say so instead of spinning forever
     if (error) {
@@ -41,7 +55,7 @@ const Dashboard = () => {
     }
 
     // If not loaded, return loading indicator
-    if ( restaurantsLoading || categoriesLoading || featuredLoading ) {
+    if (loading) {
         return (
           <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-background dark:bg-background-dark">
             <ActivityIndicator size="large" color={colors.brand} />
@@ -49,6 +63,7 @@ const Dashboard = () => {
         );
     }
 
+    perfMark('dashboard-rendered')
     return (
         <View className="flex-1 bg-background dark:bg-background-dark">
             <SafeAreaView edges={['top']} className="border-b border-border bg-surface pb-3 dark:border-border-dark dark:bg-surface-dark">
@@ -106,13 +121,12 @@ const Dashboard = () => {
                 <Categories categories={categories} />
 
                 {/* Featured Rows */}
-                {featured.map((item) => (
+                {sections.map((section) => (
                 <FeaturedRow
-                    key={item.id}
-                    id={item.id}
-                    title={item.title}
-                    description={item.description}
-                    data={item.restaurant}
+                    key={section.id}
+                    title={section.title}
+                    description={section.description}
+                    restaurants={section.restaurants}
                 />
                 ))}
 

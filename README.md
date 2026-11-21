@@ -61,7 +61,7 @@ The "Deliveroo" app is a food delivery demo. It has these screens:
 - **Cloud Storage:** catalogue images (WebP) in the default `PROJECT_ID.firebasestorage.app` bucket under `restaurants/`, `categories/` and `dishes/`. Objects have no public download tokens; `components/StorageImage.js` fetches them with the user's ID token and App Check token.
 - **App Check:** Play Integrity in release builds (configured for APKs distributed outside Google Play), a debug provider in development builds.
 
-There is no custom backend: no Cloud Functions, GraphQL or Node server. Firestore and Storage only serve signed-in users and never accept client writes ([`firestore.rules`](firestore.rules), [`storage.rules`](storage.rules); deploy changes with the Firebase console or CLI). With App Check enforced, only genuine installs of the app get through.
+The app talks only to Firebase and Google Maps; it has no backend of its own. (A legacy `graphql` Cloud Function from the original 2023 project is still deployed in the Firebase project, but nothing in this app calls it and its source isn't in this repo.) Firestore and Storage only serve signed-in users and never accept client writes ([`firestore.rules`](firestore.rules), [`storage.rules`](storage.rules); deploy changes with the Firebase console or CLI). With App Check enforced, only genuine installs of the app get through.
 
 Cloud Storage and Google Maps need the Firebase project on the Blaze plan. The project is kept at $0: map loads on Android are free, Routes API calls are capped below the free monthly tier, unused Maps APIs are disabled, every key is restricted to the app's package and signing certificate, and a $1 budget alerts on any spend.
 
@@ -140,6 +140,10 @@ The script:
 6. creates a local commit "Release v<version>" (`package.json` and `package-lock.json`) and an annotated tag `v<version>`.
 
 Nothing leaves your machine unless you pass `--publish`, which also runs `git push origin HEAD --follow-tags` and `gh release create v<version> ... --generate-notes`. Without it the script prints those two commands.
+
+**APK size:** release builds contain only `arm64-v8a` and `armeabi-v7a` (set through `expo-build-properties` `buildArchs` in `app.config.js`), which is about half the size of a four-ABI build. Set `DELIVEROO_ANDROID_ABIS` (comma-separated, or `all`) at prebuild time to change it; `npx expo run:android` always builds for the connected device or emulator.
+
+**QA builds (never published):** a release-mode build cannot pass Play Integrity on an emulator. For startup measurements, build with `EXPO_PUBLIC_DELIVEROO_QA_APPCHECK_DEBUG=1` and `EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN=<registered debug token>`, which switches `firebase/appCheck.js` to the debug provider, and pass `-PdeliverooQa=true` to Gradle. The release script and the Gradle release guard refuse to run while either variable is set, and the release JS bundle is always rebuilt, so a QA bundle can't be reused by a release. Keep QA APKs out of `dist/`.
 
 ## Contact
 

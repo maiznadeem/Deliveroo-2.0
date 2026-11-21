@@ -1,6 +1,10 @@
 import { FlatList } from 'react-native'
-import React from 'react'
+import React, { memo } from 'react'
 import CategoryCard from './CategoryCard'
+
+const listStyle = { paddingHorizontal: 16, paddingVertical: 8, gap: 12 }
+const keyExtractor = (item) => item.id.toString()
+const renderItem = ({ item }) => <CategoryCard imgUrl={item.image} title={item.name} />
 
 const Categories = ({ categories }) => {
     return (
@@ -8,13 +12,14 @@ const Categories = ({ categories }) => {
             horizontal
             showsHorizontalScrollIndicator={false}
             data={categories}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 12 }}
-            renderItem={({ item }) => (
-                <CategoryCard imgUrl={item.image} title={item.name} />
-            )}
+            keyExtractor={keyExtractor}
+            contentContainerStyle={listStyle}
+            renderItem={renderItem}
+            initialNumToRender={4}
+            maxToRenderPerBatch={4}
+            windowSize={5}
         />
     )
 }
 
-export default Categories
+export default memo(Categories)
