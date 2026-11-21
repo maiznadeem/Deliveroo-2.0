@@ -1,13 +1,11 @@
 import React, { useState } from 'react'
-import { View, StyleSheet, TouchableOpacity } from 'react-native'
-import { Text } from 'react-native-paper'
+import { View, TouchableOpacity } from 'react-native'
+import Text from '../components/ui/Text'
 import Background from '../components/AuthComponents/Background'
 import Logo from '../components/AuthComponents/Logo'
 import Header from '../components/AuthComponents/Header'
 import Button from '../components/AuthComponents/Button'
 import TextInput from '../components/AuthComponents/TextInput'
-import BackButton from '../components/AuthComponents/BackButton'
-import { theme } from '../core/theme'
 import { emailValidator } from '../helpers/emailValidator'
 import { passwordValidator } from '../helpers/passwordValidator'
 import { nameValidator } from '../helpers/nameValidator'
@@ -42,9 +40,8 @@ export default function RegisterScreen({ navigation }) {
 
     return (
 
-        <Background>
-            <BackButton goBack={navigation.goBack} />
-            <Logo />
+        <Background onBack={navigation.goBack}>
+            <Logo size={112} />
             <Header>Create Account</Header>
             <TextInput
                 label="Name"
@@ -62,7 +59,7 @@ export default function RegisterScreen({ navigation }) {
                 error={!!email.error}
                 errorText={email.error}
                 autoCapitalize="none"
-                autoCompleteType="email"
+                autoComplete="email"
                 textContentType="emailAddress"
                 keyboardType="email-address"
             />
@@ -78,14 +75,14 @@ export default function RegisterScreen({ navigation }) {
             <Button
                 mode="contained"
                 onPress={onSignUpPressed}
-                style={{ marginTop: 24 }}
+                style={{ marginTop: 12 }}
             >
                 Sign Up
             </Button>
-            <View style={styles.row}>
-                <Text>Already have an account? </Text>
-                <TouchableOpacity onPress={() => navigation.replace('LoginScreen')}>
-                <Text style={styles.link}>Login</Text>
+            <View className="mt-2 flex-row items-center">
+                <Text className="text-muted dark:text-muted-dark">Already have an account? </Text>
+                <TouchableOpacity accessibilityRole="link" className="min-h-11 justify-center" onPress={() => navigation.replace('LoginScreen')}>
+                    <Text className="font-bold text-link dark:text-link-dark">Login</Text>
                 </TouchableOpacity>
             </View>
         </Background>
@@ -93,14 +90,3 @@ export default function RegisterScreen({ navigation }) {
     )
 
 }
-
-const styles = StyleSheet.create({
-    row: {
-        flexDirection: 'row',
-        marginTop: 4,
-    },
-    link: {
-        fontWeight: 'bold',
-        color: theme.colors.primary,
-    },
-})

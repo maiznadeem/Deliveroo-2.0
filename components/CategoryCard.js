@@ -1,46 +1,26 @@
-import { View, Text, TouchableOpacity, ImageBackground, StyleSheet } from 'react-native'
+import { View, TouchableOpacity, StyleSheet } from 'react-native'
 import React from 'react'
+import { LinearGradient } from 'expo-linear-gradient'
+import StorageImage from './StorageImage'
+import Text from './ui/Text'
 
+// White title over a photo: a bottom gradient keeps it readable on any image.
 const CategoryCard = ({ imgUrl, title }) => {
   return (
-    <TouchableOpacity style={styles.container}>
-      <ImageBackground
-        source={{ uri: imgUrl }}
-        style={styles.imageBackground}
-        imageStyle={styles.image}
-      >
-        <View style={styles.overlay} />
-        <Text style={styles.title}>{title}</Text>
-      </ImageBackground>
+    <TouchableOpacity activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={title}>
+      <View className="h-28 w-28 overflow-hidden rounded-2xl">
+        <StorageImage source={{ uri: imgUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <LinearGradient
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.75)']}
+          locations={[0.25, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <Text className="absolute bottom-2 left-3 right-3 text-sm font-bold text-white" numberOfLines={1}>
+          {title}
+        </Text>
+      </View>
     </TouchableOpacity>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginRight: 5,
-  },
-  imageBackground: {
-    height: 120,
-    width: 120,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  image: {
-    resizeMode: 'cover',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-  },
-  title: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-})
 
 export default CategoryCard

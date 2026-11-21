@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import Background from '../components/AuthComponents/Background'
-import BackButton from '../components/AuthComponents/BackButton'
 import Logo from '../components/AuthComponents/Logo'
 import Header from '../components/AuthComponents/Header'
 import TextInput from '../components/AuthComponents/TextInput'
@@ -20,9 +19,8 @@ export default function ResetPasswordScreen({ navigation }) {
   }
 
   return (
-    <Background>
-      <BackButton goBack={navigation.goBack} />
-      <Logo />
+    <Background onBack={navigation.goBack}>
+      <Logo size={128} />
       <Header>Restore Password</Header>
       <TextInput
         label="E-mail address"
@@ -32,7 +30,7 @@ export default function ResetPasswordScreen({ navigation }) {
         error={!!email.error}
         errorText={email.error}
         autoCapitalize="none"
-        autoCompleteType="email"
+        autoComplete="email"
         textContentType="emailAddress"
         keyboardType="email-address"
         description="You will receive email with password reset link."
@@ -40,7 +38,7 @@ export default function ResetPasswordScreen({ navigation }) {
       <Button
         mode="contained"
         onPress={sendResetPasswordEmail}
-        style={{ marginTop: 16 }}
+        style={{ marginTop: 8 }}
       >
         Send Instructions
       </Button>

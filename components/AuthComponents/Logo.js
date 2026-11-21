@@ -1,6 +1,14 @@
 import React from 'react'
-import { Image, StyleSheet } from 'react-native'
+import { Image } from 'react-native'
 
-export default function Logo() {
-  return <Image source={require('../../assets/logo.png')} className="h-20 w-20 mb-4 scale-200" />
+// logo.png carries a lot of transparent padding, so the box is larger than the visible mark.
+export default function Logo({ size = 144 }) {
+  return (
+    <Image
+      accessibilityLabel="Deliveroo"
+      source={require('../../assets/logo.png')}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+    />
+  )
 }

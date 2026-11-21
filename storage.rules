@@ -1,0 +1,14 @@
+rules_version = '2';
+
+// Catalogue images (restaurants/, categories/, dishes/) are readable only by signed-in users of
+// the app; App Check enforcement in the Firebase console limits them to genuine builds. Objects
+// carry no public download tokens, so the app fetches them with the user's ID token and App Check
+// token (components/StorageImage.js). Uploads happen from the console or gcloud, never the client.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

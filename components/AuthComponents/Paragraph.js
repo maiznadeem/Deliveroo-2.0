@@ -1,16 +1,6 @@
 import React from 'react'
-import { StyleSheet } from 'react-native'
-import { Text } from 'react-native-paper'
+import Text from '../ui/Text'
 
-export default function Paragraph(props) {
-  return <Text style={styles.text} {...props} />
+export default function Paragraph({ children }) {
+  return <Text className="mb-4 text-center text-base text-muted dark:text-muted-dark">{children}</Text>
 }
-
-const styles = StyleSheet.create({
-  text: {
-    fontSize: 15,
-    lineHeight: 21,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-})

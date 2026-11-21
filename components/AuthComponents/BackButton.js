@@ -1,26 +1,20 @@
 import React from 'react'
-import { TouchableOpacity, Image, StyleSheet } from 'react-native'
+import { ArrowLeft } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import IconButton from '../ui/IconButton'
+import { useAppTheme } from '../../hooks/useAppTheme'
 
 export default function BackButton({ goBack }) {
   const insets = useSafeAreaInsets()
+  const { colors } = useAppTheme()
   return (
-    <TouchableOpacity onPress={goBack} style={[styles.container, { top: 10 + insets.top }]}>
-      <Image
-        style={styles.image}
-        source={require('../../assets/arrow_back.png')}
-      />
-    </TouchableOpacity>
+    <IconButton
+      accessibilityLabel="Go back"
+      onPress={goBack}
+      className="absolute left-2 z-10"
+      style={{ top: insets.top + 8 }}
+    >
+      <ArrowLeft size={24} strokeWidth={2} color={colors.text} />
+    </IconButton>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    left: 4,
-  },
-  image: {
-    width: 24,
-    height: 24,
-  },
-})

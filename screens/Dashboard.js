@@ -1,23 +1,23 @@
-import { View, Image, Text, TextInput, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import React, { useLayoutEffect } from 'react';
-import { StatusBar } from 'expo-status-bar';
+import { View, TextInput, ScrollView, ActivityIndicator } from 'react-native';
+import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-    ChevronDownIcon,
-    MagnifyingGlassIcon,
-    AdjustmentsVerticalIcon,
-    Bars3Icon,
-} from 'react-native-heroicons/outline';
+import { ChevronDown, Search, SlidersHorizontal, Menu, Sun, Moon } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import Categories from '../components/Categories';
 import FeaturedRow from '../components/FeaturedRow';
+import StorageImage from '../components/StorageImage';
+import Text from '../components/ui/Text';
+import IconButton from '../components/ui/IconButton';
 
 import useFirestoreData from '../hooks/UseFirestoreData';
-import { useNavigation } from '@react-navigation/native';
+import { useAppTheme } from '../hooks/useAppTheme';
+import { fontFamilies } from '../core/theme';
 
 const Dashboard = () => {
 
     const navigation = useNavigation()
+    const { isDark, colors, toggleScheme } = useAppTheme()
 
     // Firestore Data Fetching
     const { loading: restaurantsLoading, error: restaurantsError } = useFirestoreData('Restaurant')
@@ -29,9 +29,9 @@ const Dashboard = () => {
     // Reads failed (e.g. permission-denied when not signed in): say so instead of spinning forever
     if (error) {
         return (
-          <SafeAreaView style={{flex: 1}} className="items-center justify-center px-8">
-            <Text className="text-lg font-bold mb-2 text-center">Couldn't load restaurants</Text>
-            <Text className="text-gray-500 text-center">
+          <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-background px-8 dark:bg-background-dark">
+            <Text className="mb-2 text-center text-lg font-bold">Couldn't load restaurants</Text>
+            <Text className="text-center text-muted dark:text-muted-dark">
               {String(error.code).includes('permission-denied')
                 ? 'You need to be signed in to view restaurants.'
                 : 'Please check your connection and try again later.'}
@@ -43,58 +43,69 @@ const Dashboard = () => {
     // If not loaded, return loading indicator
     if ( restaurantsLoading || categoriesLoading || featuredLoading ) {
         return (
-          <SafeAreaView style={{flex: 1}}>
-            <ActivityIndicator style={{flex: 1, justifyContent: 'center', alignItems: 'center'}} size="large" color="#00B8C0" />
+          <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-background dark:bg-background-dark">
+            <ActivityIndicator size="large" color={colors.brand} />
           </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView>
-            <StatusBar backgroundColor="white" barStyle="dark-content" />
-            <View className='bg-white pt-5'>
+        <View className="flex-1 bg-background dark:bg-background-dark">
+            <SafeAreaView edges={['top']} className="border-b border-border bg-surface pb-3 dark:border-border-dark dark:bg-surface-dark">
 
-                {/* Top View */}
-                <View className='flex-row items-center mx-4 space-x-3'>
-                    <TouchableOpacity
-                        onPress={() => navigation.openDrawer()}
-                    >
-                        <Bars3Icon color='#00B8C0' size={27}/>
-                    </TouchableOpacity>
-                    <Image
-                        source={{uri: 'https://firebasestorage.googleapis.com/v0/b/deliveroo-2-c6550.appspot.com/o/Delivery%20Guy.png?alt=media&token=3111e8f6-a485-43db-8353-4a534e643fd7'}}
-                        className='h-7 w-7 bg-gray-300 p-4 rounded-full'
+                {/* Top bar */}
+                <View className="flex-row items-center gap-1 pl-2 pr-2 pt-2">
+                    <IconButton accessibilityLabel="Open menu" onPress={() => navigation.openDrawer()}>
+                        <Menu size={24} strokeWidth={2} color={colors.brand} />
+                    </IconButton>
+                    <StorageImage
+                        source={require('../assets/rider.webp')}
+                        className="h-9 w-9 rounded-full"
+                        resizeMode="cover"
                     />
-                    <View className='flex-1'>
-                        <Text className='font-bold text-gray-400 text-xs'>Deliver Now!</Text>
-                        <View className='flex-row items-center'>
-                            <Text className='font-bold text-lg'>Current Location</Text>
-                            <ChevronDownIcon style={{ marginLeft: 4 }} size={20} color='#00B8C0' />
+                    <View className="ml-2 flex-1">
+                        <Text className="text-xs font-semibold text-muted dark:text-muted-dark" numberOfLines={1}>Deliver Now!</Text>
+                        <View className="flex-row items-center gap-1">
+                            <Text className="shrink text-base font-bold" numberOfLines={1}>Current Location</Text>
+                            <ChevronDown size={20} strokeWidth={2} color={colors.brand} />
                         </View>
                     </View>
+                    <IconButton
+                        accessibilityLabel={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                        onPress={toggleScheme}
+                    >
+                        {isDark
+                            ? <Sun size={24} strokeWidth={2} color={colors.brand} />
+                            : <Moon size={24} strokeWidth={2} color={colors.brand} />}
+                    </IconButton>
                 </View>
 
                 {/* Search */}
-                <View className='flex-row items-center space-x-2 pb-2 mx-4 mt-2'>
-                    <View className='flex-row flex-1 space-x-2 bg-gray-200 p-3 items-center rounded-md'>
-                        <MagnifyingGlassIcon size={20} color='gray' />
-                        <TextInput 
-                            placeholder='Restaurants and Cuisines'
-                            keyboardType='default'
+                <View className="mt-1 flex-row items-center gap-2 pl-4 pr-2">
+                    <View className="h-11 flex-1 flex-row items-center gap-2 rounded-xl bg-surface-alt px-3 dark:bg-surface-alt-dark">
+                        <Search size={20} strokeWidth={2} color={colors.muted} />
+                        <TextInput
+                            className="h-11 flex-1 text-sm text-text dark:text-text-dark"
+                            style={{ fontFamily: fontFamilies.regular }}
+                            placeholder="Restaurants and Cuisines"
+                            placeholderTextColor={colors.muted}
+                            keyboardType="default"
+                            selectionColor={colors.brand}
                         />
                     </View>
-                    <AdjustmentsVerticalIcon size={35} color='#00B8C0' />
+                    <View className="h-11 w-11 items-center justify-center">
+                        <SlidersHorizontal size={24} strokeWidth={2} color={colors.brand} />
+                    </View>
                 </View>
-            </View>
+            </SafeAreaView>
 
             {/* Body */}
-            <ScrollView showsVerticalScrollIndicator={false}>
-                
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}>
+
                 {/* Categories */}
                 <Categories categories={categories} />
 
                 {/* Featured Rows */}
-
                 {featured.map((item) => (
                 <FeaturedRow
                     key={item.id}
@@ -105,11 +116,8 @@ const Dashboard = () => {
                 />
                 ))}
 
-                <View className="p-10 m-10"></View>
-
             </ScrollView>
-
-        </SafeAreaView>
+        </View>
     )
 }
 

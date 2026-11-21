@@ -3,6 +3,10 @@ import { ReactNativeFirebaseAppCheckProvider, initializeAppCheck } from '@react-
 
 let initialized = false;
 
+// The App Check instance, for callers that need a token (see hooks/useStorageAuthHeaders.js).
+// Stays null if initialization failed.
+export let appCheckInstance = null;
+
 // Must run once, before the first Firestore/Auth call (imported at the top of App.js).
 // Failures are logged and swallowed: the app keeps running, Firestore reads will then be
 // rejected by the backend if App Check enforcement is on.
@@ -25,7 +29,7 @@ export function setupAppCheck() {
       },
     });
 
-    initializeAppCheck(getApp(), { provider, isTokenAutoRefreshEnabled: true });
+    appCheckInstance = initializeAppCheck(getApp(), { provider, isTokenAutoRefreshEnabled: true });
   } catch (error) {
     console.warn('[AppCheck] initialization failed:', error);
   }

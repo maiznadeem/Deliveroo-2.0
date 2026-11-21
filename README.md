@@ -50,17 +50,20 @@ The "Deliveroo" app is a food delivery demo. It has these screens:
 - **React Native 0.88 / Expo SDK 58** (New Architecture), plain JavaScript, npm.
 - **React Navigation 7:** a root stack containing a drawer, which contains bottom tabs.
 - **Redux Toolkit:** basket and selected restaurant state.
-- **NativeWind 4 (Tailwind CSS 3):** `className` styling.
+- **NativeWind 4 (Tailwind CSS 3):** `className` styling with a semantic light/dark palette (`core/palette.js`, `tailwind.config.js`).
+- **Light and dark mode:** follows the system until the user taps the sun/moon toggle (Dashboard header or Profile); the choice is saved with AsyncStorage.
+- **Plus Jakarta Sans** (embedded at build time) and **Lucide** icons.
 - **expo-video:** the order-preparing animation.
 
 ### Firebase (React Native Firebase, modular API)
-- **Authentication:** email and password sign-in and registration.
-- **Firestore:** read-only. The `Restaurant`, `Categories` and `Featured` collections hold the data; restaurant images are served from Firebase Storage URLs stored in the documents.
-- **App Check:** Play Integrity in release builds, a debug provider in development builds.
+- **Authentication:** email and password sign-in and registration, plus a one-tap **Try the demo** button (Firebase anonymous sign-in, so no shared credentials ship in the app; signing out deletes the demo user).
+- **Firestore:** read-only. The `Restaurant`, `Dish`, `Categories` and `Featured` collections hold the data.
+- **Cloud Storage:** catalogue images (WebP) in the default `PROJECT_ID.firebasestorage.app` bucket under `restaurants/`, `categories/` and `dishes/`. Objects have no public download tokens; `components/StorageImage.js` fetches them with the user's ID token and App Check token.
+- **App Check:** Play Integrity in release builds (configured for APKs distributed outside Google Play), a debug provider in development builds.
 
-There is no custom backend: no Cloud Functions, GraphQL or Node server. Firestore rules are "signed-in users only, no client writes" ([`firestore.rules`](firestore.rules); deploy changes with the Firebase console or CLI).
+There is no custom backend: no Cloud Functions, GraphQL or Node server. Firestore and Storage only serve signed-in users and never accept client writes ([`firestore.rules`](firestore.rules), [`storage.rules`](storage.rules); deploy changes with the Firebase console or CLI). With App Check enforced, only genuine installs of the app get through.
 
-Storage images need the Firebase project on the Blaze plan: since February 2026 the default `*.appspot.com` bucket is not reachable on the Spark plan.
+Cloud Storage and Google Maps need the Firebase project on the Blaze plan. The project is kept at $0: map loads on Android are free, Routes API calls are capped below the free monthly tier, unused Maps APIs are disabled, every key is restricted to the app's package and signing certificate, and a $1 budget alerts on any spend.
 
 ### Google Maps
 - **Maps SDK for Android** (react-native-maps) for the delivery map.

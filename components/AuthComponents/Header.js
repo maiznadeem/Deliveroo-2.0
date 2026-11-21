@@ -1,17 +1,10 @@
 import React from 'react'
-import { StyleSheet } from 'react-native'
-import { Text } from 'react-native-paper'
-import { theme, FONTS } from '../../core/theme'
+import Text from '../ui/Text'
 
-export default function Header(props) {
-  return <Text style={styles.header} {...props} />
+export default function Header({ children }) {
+  return (
+    <Text accessibilityRole="header" className="py-3 text-center text-2xl font-extrabold text-link dark:text-link-dark">
+      {children}
+    </Text>
+  )
 }
-
-const styles = StyleSheet.create({
-  header: {
-    fontSize: 21,
-    color: theme.colors.primary,
-    fontWeight: 'bold',
-    paddingVertical: 12,
-  },
-})

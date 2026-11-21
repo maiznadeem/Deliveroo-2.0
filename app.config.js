@@ -26,7 +26,7 @@ module.exports = {
     version,
     orientation: 'portrait',
     icon: './assets/icon.png',
-    userInterfaceStyle: 'light',
+    userInterfaceStyle: 'automatic',
     ios: {
       supportsTablet: true,
       bundleIdentifier: APP_ID,
@@ -38,6 +38,8 @@ module.exports = {
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || './google-services.json',
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
+        // Android 13+ themed icon: single-colour silhouette, tinted by the launcher.
+        monochromeImage: './assets/adaptive-icon-monochrome.png',
         backgroundColor: '#ffffff',
       },
     },
@@ -66,12 +68,28 @@ module.exports = {
       [
         'expo-splash-screen',
         {
-          image: './assets/splash.png',
-          resizeMode: 'contain',
+          // Transparent, padded logo (the Android 12+ splash icon is masked to a circle).
+          image: './assets/splash-icon.png',
+          imageWidth: 240,
           backgroundColor: '#ffffff',
-          imageWidth: 200,
+          dark: {
+            image: './assets/splash-icon.png',
+            backgroundColor: '#0D1114',
+          },
         },
       ],
+      [
+        // Embeds Plus Jakarta Sans in the native build (res/assets), so no runtime font loading is needed.
+        'expo-font',
+        {
+          fonts: [
+            ...['400Regular', '500Medium', '600SemiBold', '700Bold', '800ExtraBold'].map(
+              (w) => `./node_modules/@expo-google-fonts/plus-jakarta-sans/${w}/PlusJakartaSans_${w}.ttf`
+            ),
+          ],
+        },
+      ],
+      'expo-system-ui',
       // Only written into the manifest when the env var is set at prebuild time.
       ['react-native-maps', { androidGoogleMapsApiKey: process.env.GOOGLE_MAPS_ANDROID_API_KEY }],
       './plugins/withAndroidReleaseSigning',

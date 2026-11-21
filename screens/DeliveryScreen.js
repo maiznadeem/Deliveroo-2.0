@@ -1,15 +1,19 @@
-import { View, Text, TouchableOpacity, BackHandler, Image } from 'react-native'
+import { View, TouchableOpacity, BackHandler, Image } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { useSelector } from 'react-redux'
 import { selectRestaurant } from '../features/restaurantSlice'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PhoneIcon, XMarkIcon } from 'react-native-heroicons/solid'
+import { Phone, X } from 'lucide-react-native'
 import * as Progress from 'react-native-progress'
 import MapView, { Marker, Polyline } from 'react-native-maps'
+import Text from '../components/ui/Text'
+import IconButton from '../components/ui/IconButton'
 import { getRouteCoordinates } from '../helpers/directions'
 import { popToDashboardTab } from '../helpers/navigation'
+import { darkMapStyle } from '../core/mapStyles'
+import { useAppTheme } from '../hooks/useAppTheme'
 import Constants from 'expo-constants'
 
 // Same env var feeds the manifest key (react-native-maps plugin) and this flag (app.config.js extra).
@@ -19,6 +23,7 @@ const DeliveryScreen = () => {
 
     const navigation = useNavigation()
     const insets = useSafeAreaInsets()
+    const { isDark, colors } = useAppTheme()
     const restaurant = useSelector(selectRestaurant)
 
     const initialRegion = {
@@ -54,54 +59,56 @@ const DeliveryScreen = () => {
     };
 
     return (
-        <View className="bg-[#00B8C0] flex-1">
-            <StatusBar backgroundColor="#00B8C0" barStyle="dark-content" />
-            <SafeAreaView className="z-50">
-                <View className="flex-row justify-between items-center p-5">
-                    <TouchableOpacity onPress={() => popToDashboardTab(navigation)} >
-                        <XMarkIcon color="white" size={30} />
-                    </TouchableOpacity>
-                    <Text className="font-light text-white text-lg">Order Help</Text>
+        <View className="flex-1 bg-background dark:bg-background-dark">
+            <StatusBar style="light" />
+            {/* Teal header: status-bar inset, close row, ETA card */}
+            <SafeAreaView edges={['top']} className="bg-brand">
+                <View className="flex-row items-center justify-between px-2">
+                    <IconButton accessibilityLabel="Close" onPress={() => popToDashboardTab(navigation)}>
+                        <X size={24} strokeWidth={2} color="#FFFFFF" />
+                    </IconButton>
+                    <Text className="mr-2 text-base font-semibold text-white">Order Help</Text>
                 </View>
-                <View className="bg-white mx-5 my-2 rounded-md p-6 z-50">
-                    <View className="flex-row justify-between">
-                        <View>
-                            <Text className="text-lg text-gray-400">Estimated Arrival</Text>
-                            <Text className="text-4xl font-bold">30-45 Minutes</Text>
+                <View className="mx-4 mb-4 mt-1 rounded-2xl bg-surface p-4 dark:bg-surface-dark">
+                    <View className="flex-row items-center justify-between gap-3">
+                        <View className="flex-1">
+                            <Text className="text-sm text-muted dark:text-muted-dark">Estimated Arrival</Text>
+                            <Text className="text-2xl font-extrabold" numberOfLines={1} adjustsFontSizeToFit>30-45 Minutes</Text>
                         </View>
-                        <Image 
-                            source={require('../assets/bike.webp')}
-                            className="h-20 w-20"
-                        />
+                        <Image source={require('../assets/bike.webp')} className="h-16 w-16" resizeMode="contain" />
                     </View>
-                    <Progress.Bar size={30} indeterminate={true} color='#00B8C0'/>
-                    <Text className="mt-3 text-gray-400">Your order at {restaurant.title} is being prepared. </Text>
+                    <View className="my-3">
+                        <Progress.Bar width={null} height={6} borderWidth={0} borderRadius={3} indeterminate={true} color={colors.brand} unfilledColor={colors.surfaceAlt} />
+                    </View>
+                    <Text className="text-sm text-muted dark:text-muted-dark" numberOfLines={2}>
+                        Your order at {restaurant.title} is being prepared.
+                    </Text>
                 </View>
             </SafeAreaView>
 
             {!hasMapsKey ? (
             // Google Maps throws (and kills the app) when no API key is in the manifest, so builds made
             // without GOOGLE_MAPS_ANDROID_API_KEY show this placeholder instead of the map.
-            <View className="flex-1 bg-gray-100 items-center justify-center px-10">
-                <Text className="text-gray-500 text-center">The live map isn't available in this build.</Text>
+            <View className="flex-1 items-center justify-center bg-surface-alt px-10 dark:bg-surface-alt-dark">
+                <Text className="text-center text-muted dark:text-muted-dark">The live map isn't available in this build.</Text>
             </View>
             ) : (
             <MapView
                 initialRegion={initialRegion}
                 style={{ flex: 1 }}
-                mapType="mutedStandard"
+                customMapStyle={isDark ? darkMapStyle : undefined}
             >
                 {routeCoordinates.length > 0 && (
                 <Polyline
                     coordinates={routeCoordinates}
-                    strokeColor="#00B8C0"
-                    strokeWidth={3}
+                    strokeColor={colors.brand}
+                    strokeWidth={4}
                 />
                 )}
                 <Marker
                 coordinate={initialRegion}
                 title="Your Location"
-                pinColor="#00B8C0"
+                pinColor={colors.brand}
                 >
                 </Marker>
                 {markerCoordinate && (
@@ -109,28 +116,35 @@ const DeliveryScreen = () => {
                 coordinate={markerCoordinate}
                 title={restaurant.title}
                 description={restaurant.short_description}
-                pinColor="#00B8C0"
+                pinColor={colors.brand}
                 />
                 )}
             </MapView>
             )}
 
-            {/* Plain row padded by the bottom inset (edge-to-edge); the old fixed-height SafeAreaView hid the text. */}
-            <View className="flex-row bg-white items-center px-5 pt-5" style={{ paddingBottom: insets.bottom + 20 }}>
+            {/* Rider bar: padded by the bottom inset (edge-to-edge); a fixed-height SafeAreaView used to hide the text. */}
+            <View
+                className="flex-row items-center gap-4 border-t border-border bg-surface px-4 pt-4 dark:border-border-dark dark:bg-surface-dark"
+                style={{ paddingBottom: insets.bottom + 16 }}
+            >
                 <Image
-                    source={{ uri: 'https://firebasestorage.googleapis.com/v0/b/deliveroo-2-c6550.appspot.com/o/Delivery%20Guy.png?alt=media&token=3111e8f6-a485-43db-8353-4a534e643fd7' }}
-                    className="h-12 w-12 bg-gray-300 rounded-full"
+                    source={require('../assets/rider.webp')}
+                    className="h-12 w-12 rounded-full"
+                    resizeMode="cover"
                 />
-                <View className="flex-1 ml-5">
-                    <Text className="text-lg">David Kushner</Text>
-                    <Text className="text-gray-400">Your Rider</Text>
+                <View className="flex-1">
+                    <Text className="text-base font-semibold" numberOfLines={1}>David Kushner</Text>
+                    <Text className="text-sm text-muted dark:text-muted-dark">Your Rider</Text>
                 </View>
-                <TouchableOpacity className="flex-row items-center">
-                    <PhoneIcon size={25} color='#00B8C0'/>
-                    <Text className="text-[#00B8C0] text-lg ml-1 font-bold">Call</Text>
+                <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel="Call your rider"
+                    className="min-h-11 flex-row items-center gap-2 rounded-full border border-brand px-4"
+                >
+                    <Phone size={20} strokeWidth={2} color={colors.brand} />
+                    <Text className="font-bold text-link dark:text-link-dark">Call</Text>
                 </TouchableOpacity>
             </View>
-
         </View>
     )
 }
