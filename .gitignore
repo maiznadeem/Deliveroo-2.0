@@ -28,3 +28,8 @@ GoogleService-Info.plist
 .env
 .env.local
 *.keystore
+
+# Firebase CLI local files
+.firebase/
+firebase-debug.log
+firestore-debug.log

@@ -22,8 +22,8 @@ Services in use:
 
 Not in use:
 - **Cloud Functions:** none. The legacy `graphql` function from 2023 was deleted on 2026-11-22, along with its source bucket and Artifact Registry repository.
-- **Firebase Hosting:** the default site `deliveroo-2-c6550.web.app` exists but has nothing deployed, so it returns 404.
-- **App Engine:** the default app exists only because of the old `appspot.com` bucket. It has no services and can't be deleted.
+- **Firebase Hosting:** the default site `deliveroo-2-c6550.web.app` exists but has nothing deployed, so it returns 404. It is kept as is: it costs nothing, and a project's default site can't be deleted.
+- **App Engine:** the default app exists only because of the old `appspot.com` bucket. It has no services and is kept as is: it costs nothing, it can't be deleted, and disabling App Engine on an older Firebase project can affect its Firestore database.
 - **Realtime Database:** none.
 
 ## Cloudflare: not used, by design
@@ -73,11 +73,23 @@ Checks are run locally before every merge:
 The script refuses to build a release if a QA switch (the App Check debug provider) or a debug token is set.
 
 ### Security rules and indexes
-- `firestore.rules` and `storage.rules` in this repo are the source of truth. The live rules match them exactly (checked on 2026-11-22).
-- There is no `firebase.json` or `.firebaserc` in the repo yet, so deploy rules with **one** of these:
-  - **Firebase console:** Firestore → Rules and Storage → Rules. Paste the file contents and publish.
-  - **Firebase CLI:** create a local `firebase.json` with `"firestore": { "rules": "firestore.rules" }` and `"storage": { "rules": "storage.rules" }`, then run `firebase deploy --only firestore:rules,storage --project deliveroo-2-c6550`.
-- **Indexes:** none are managed from this repo. One legacy composite index exists on `Restaurant` (`genre` ascending, `id` ascending) from 2023. The current app doesn't need it; its queries are whole-collection reads.
+- The source of truth is the repo:
+  - `firestore.rules`
+  - `storage.rules`
+  - `firestore.indexes.json`
+  - `firebase.json`, which wires them up
+  - `.firebaserc`, which pins the default project to `deliveroo-2-c6550`
+- **Live matches the repo exactly** (checked on 2026-11-22). Both rule files compile with no issues through the Rules API, so a deploy would change nothing.
+- **To deploy**, use the Firebase CLI, signed in as a project owner:
+  ```bash
+  firebase deploy --only firestore:rules,storage      # rules only
+  firebase deploy --only firestore:indexes            # indexes
+  firebase deploy --only firestore:rules --dry-run    # validate without releasing
+  ```
+  The Firebase console (Firestore → Rules, Storage → Rules) also works for one-off edits. Copy any change back into the files here.
+- **Indexes:** none. Every query the app makes is a whole-collection read or a document lookup, so automatic single-field indexes are enough.
+  - The legacy 2023 composite index on `Restaurant` (`genre`, `id`) wasn't used and was deleted on 2026-11-22.
+  - `firestore.indexes.json` is therefore empty. Deploying indexes from it removes any composite index created by hand in the console.
 - **Catalogue data and images:** they're edited with the Firebase console, gcloud, or the Firestore REST API with an owner's credentials. Clients can never write.
 
 ## Rollback
@@ -85,10 +97,10 @@ The script refuses to build a release if a QA switch (the App Check debug provid
 | Part | How to roll back |
 | --- | --- |
 | **App** | Install the previous APK from GitHub Releases. Android only allows installing a lower `versionCode` after uninstalling, so for a real fix ship a new patch version, e.g. `2.0.1`. Bad releases can be deleted or marked as pre-release on GitHub. |
-| **Security rules** | Firebase console → Rules → history → roll back to a previous version. Or redeploy the file from an earlier git commit. |
+| **Security rules / indexes** | Firebase console → Rules → history → roll back to a previous version. Or check out the files from an earlier git commit and run `firebase deploy --only firestore:rules,storage` (or `firestore:indexes`). |
 | **App Check enforcement** | Firebase console → App Check → APIs → set Firestore, Storage or Authentication back to *Unenforced*. This takes effect within about 15 minutes. |
 | **Storage objects** | Object versioning is off, but the bucket has a 7-day soft-delete window: deleted or overwritten objects can be restored with `gcloud storage restore` for 7 days. The originals from before the 2026 WebP migration are archived offline by the maintainer. The deleted `appspot.com` bucket was restorable only until about 2026-11-28. |
-| **Firestore data** | No backups, point-in-time recovery or delete protection are configured. The database is in `nam5`. The catalogue is small and was seeded by hand. |
+| **Firestore data** | Backups and point-in-time recovery are **off by choice**: both are billed and the project is kept at $0. Delete protection is also off. The database is in `nam5`. The catalogue is small and was seeded by hand, so it can be re-entered if lost. |
 | **API keys** | Restrictions and enabled APIs can be changed back in Google Cloud console → APIs & Services. A deleted key can be restored for 30 days. |
 
 ## Secrets and keys (names and locations only)
