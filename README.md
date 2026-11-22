@@ -74,6 +74,8 @@ The app talks only to Firebase and Google Maps; it has no backend of its own. (T
 
 Cloud Storage and Google Maps need the Firebase project on the Blaze plan. The project is kept at $0: map loads on Android are free, Routes API calls are capped below the free monthly tier, unused Maps APIs are disabled, every key is restricted to the app's package and signing certificate, and a $1 budget alerts on any spend.
 
+**Infrastructure and deployment** (hosting, builds, CI/CD, rollback, secrets, App Check, rules, and why there's no Cloudflare) is documented in [docs/INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md).
+
 ### Google Maps
 - **Maps SDK for Android** (react-native-maps) for the delivery map.
 - **Routes API** (`routes.googleapis.com/directions/v2:computeRoutes`) for the route line. If the request fails, the app draws a straight line between the two points.
